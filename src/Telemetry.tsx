@@ -17,7 +17,7 @@ interface State {
   lo?: number;
   p?: number;
   r?: number;
-  rpm?: number;
+  rpm: number;
   tah?: number;
   trah?: number;
   tro?: number;
@@ -26,17 +26,74 @@ interface State {
 }
 
 class Telemetry extends Component<Props, State> {
+  #odoPoller?: number;
+  #rpmPoller?: number;
+
+  // full telemetry for debugging.
   #telemetryPoller?: number;
 
   constructor(props: Props) {
     super(props);
     this.state = {
+      lo: 0,
+      rpm: 0,
       topSpeed: 0.0,
+      tro: 0,
     };
   }
 
   private calculateSpeed(rpm: number, diameter: number = 11) {
-    return 2 * Math.PI * (diameter / 2) * (rpm / 60);
+    return (diameter * Math.PI * rpm * 60) / 5_280 / 10;
+  }
+
+  private refreshRPM() {
+    if (this.props.device != null) {
+      return BTManager.read(
+        this.props.device.id,
+        ONEWHEEL_SERVICE_UUID,
+        CHARACTERISTICS.rpm,
+      )
+        .then(rrpm => {
+          const brpm = Buffer.from(rrpm);
+          this.setState({rpm: brpm.readUInt16BE(0)});
+        })
+        .catch(() => {
+          if (this.#rpmPoller != null) {
+            clearInterval(this.#rpmPoller);
+          }
+        });
+    }
+    return Promise.reject('No device connected.');
+  }
+
+  private refreshOdometers() {
+    if (this.props.device != null) {
+      return Promise.all([
+        BTManager.read(
+          this.props.device.id,
+          ONEWHEEL_SERVICE_UUID,
+          CHARACTERISTICS.lifetimeOdometer,
+        ),
+        BTManager.read(
+          this.props.device.id,
+          ONEWHEEL_SERVICE_UUID,
+          CHARACTERISTICS.tripOdometer,
+        ),
+      ])
+        .then(([rlo, rto]) => {
+          const [blo, bto] = [Buffer.from(rlo), Buffer.from(rto)];
+          this.setState({
+            lo: blo.readUInt16BE(0),
+            tro: bto.readUInt16BE(0),
+          });
+        })
+        .catch(() => {
+          if (this.#odoPoller != null) {
+            clearInterval(this.#odoPoller);
+          }
+        });
+    }
+    return Promise.reject('No device connected.');
   }
 
   private refreshTelemetry() {
@@ -129,8 +186,15 @@ class Telemetry extends Component<Props, State> {
   }
 
   async componentDidMount(): Promise<void> {
-    await this.refreshTelemetry().catch(err => console.error(err));
-    this.#telemetryPoller = setInterval(() => this.refreshTelemetry(), 5_000);
+    if (this.props.debug) {
+      await this.refreshTelemetry().catch(err => console.error(err));
+      this.#telemetryPoller = setInterval(() => this.refreshTelemetry(), 5_000);
+    } else {
+      await this.refreshOdometers().catch(err => console.error(err));
+      this.#odoPoller = setInterval(() => this.refreshOdometers(), 1_000);
+      await this.refreshRPM().catch(err => console.error(err));
+      this.#rpmPoller = setInterval(() => this.refreshRPM(), 500);
+    }
   }
 
   componentDidUpdate(): void {
@@ -141,7 +205,12 @@ class Telemetry extends Component<Props, State> {
   }
 
   componentWillUnmount(): void {
-    clearInterval(this.#telemetryPoller);
+    if (this.#rpmPoller != null) {
+      clearInterval(this.#rpmPoller);
+    }
+    if (this.#telemetryPoller != null) {
+      clearInterval(this.#telemetryPoller);
+    }
   }
 
   render(): JSX.Element {

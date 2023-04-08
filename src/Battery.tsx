@@ -109,7 +109,9 @@ class Battery extends Component<Props, State> {
   }
 
   componentWillUnmount(): void {
-    clearInterval(this.#batteryPoller);
+    if (this.#batteryPoller != null) {
+      clearInterval(this.#batteryPoller);
+    }
   }
 
   render(): JSX.Element {

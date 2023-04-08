@@ -1,19 +1,15 @@
 import React, {Component} from 'react';
 
-import {Button, Text, View} from 'react-native';
+import {Buffer} from '@craftzdog/react-native-buffer';
+import {Button, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
-import {
-  type BoardGenerationName,
-  BoardGeneration,
-  inferBoardFromHardwareRevision,
-} from './rewheel/board';
-import {Buffer} from '@craftzdog/react-native-buffer';
+import {inferBoardFromHardwareRevision} from './rewheel/board';
 // import { BoardGeneration } from "./rewheel/common/src";
 
-type RideMode = {
-  [key in BoardGenerationName]: number | RideMode;
-};
+// type RideMode = {
+//   [key in BoardGenerationName]: number | RideMode;
+// };
 
 // function get<T>(obj: object, path: string): T {
 //   const travel = (regexp: RegExp) =>
@@ -29,15 +25,15 @@ type RideMode = {
 // }
 
 // model.mode <-
-const modes = {
-  any: {
-    // enterfactorymode: 0xcbcb,
-    // calibratemotorold: 0xcccc,
-    // calibratemotor: 0xcaea,
-    // calibraterepair: 0xcaca,
-    // factorymode: 0xcb,
-    custom: 0x09,
-  },
+const modes: {[board: string]: {[mode: string]: number}} = {
+  // any: {
+  // enterfactorymode: 0xcbcb,
+  // calibratemotorold: 0xcccc,
+  // calibratemotor: 0xcaea,
+  // calibraterepair: 0xcaca,
+  // factorymode: 0xcb,
+  //   custom: 0x09,
+  // },
   v1: {
     classic: 0x01,
     extreme: 0x02,
@@ -48,12 +44,14 @@ const modes = {
     cruz: 0x05,
     mission: 0x06,
     delirium: 0x08,
+    custom: 0x09,
   },
   pint: {
     redwood: 0x05,
     pacific: 0x06,
     elevated: 0x07,
     skyline: 0x08,
+    custom: 0x09,
   },
 };
 
@@ -66,7 +64,7 @@ interface State {
 }
 
 class ModeSelection extends Component<Props, State> {
-  boardType: number = BoardGeneration.Pint;
+  boardType: string = 'Pint';
 
   constructor(props: Props) {
     super(props);
@@ -79,7 +77,10 @@ class ModeSelection extends Component<Props, State> {
         this.props.device.id,
         ONEWHEEL_SERVICE_UUID,
         CHARACTERISTICS.hardwareRevision,
-      ).then((hwRevision: number[]) => {
+      ).then((rhwr: number[]) => {
+        const bhwr = Buffer.from(rhwr);
+        const hwRevision = bhwr.readUInt16BE(0);
+
         console.debug(`Retreived board hardware revision: ${hwRevision}`);
         this.boardType = inferBoardFromHardwareRevision(hwRevision);
       });
@@ -107,11 +108,12 @@ class ModeSelection extends Component<Props, State> {
     if (device == null) {
       throw new Error('No connected device.');
     }
+
     await BTManager.write(
       device.id,
       ONEWHEEL_SERVICE_UUID,
       CHARACTERISTICS.rideMode,
-      modeValue,
+      [modeValue],
     ).catch(err => {
       console.error(err);
     });

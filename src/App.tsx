@@ -144,7 +144,7 @@ class App extends Component<{}, State> {
         />
         <View style={this.state.backgroundStyle}>
           <Text style={styles.header}>
-            <Text style={styles.green}>Re</Text>Wheel Controller
+            <Text style={styles.green}>ow</Text>.rn
           </Text>
           <View>
             {this.state.isConnected ? (
