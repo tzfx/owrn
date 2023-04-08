@@ -8,6 +8,7 @@ import {
   BoardGeneration,
   inferBoardFromHardwareRevision,
 } from './rewheel/board';
+import {Buffer} from '@craftzdog/react-native-buffer';
 // import { BoardGeneration } from "./rewheel/common/src";
 
 type RideMode = {
@@ -28,7 +29,7 @@ type RideMode = {
 // }
 
 // model.mode <-
-const modes: RideMode = {
+const modes = {
   any: {
     // enterfactorymode: 0xcbcb,
     // calibratemotorold: 0xcccc,
@@ -61,7 +62,7 @@ interface Props {
 }
 
 interface State {
-  setMode: string;
+  setMode?: number;
 }
 
 class ModeSelection extends Component<Props, State> {
@@ -69,6 +70,10 @@ class ModeSelection extends Component<Props, State> {
 
   constructor(props: Props) {
     super(props);
+    this.state = {};
+  }
+
+  componentDidMount(): void {
     if (this.props.device != null) {
       BTManager.read(
         this.props.device.id,
@@ -78,11 +83,23 @@ class ModeSelection extends Component<Props, State> {
         console.debug(`Retreived board hardware revision: ${hwRevision}`);
         this.boardType = inferBoardFromHardwareRevision(hwRevision);
       });
+      BTManager.read(
+        this.props.device.id,
+        ONEWHEEL_SERVICE_UUID,
+        CHARACTERISTICS.rideMode,
+      ).then(rMode => {
+        const bMode = Buffer.from(rMode);
+        const currentMode = bMode.readUInt8(1);
+        console.debug(`Current ride mode: ${currentMode}`);
+        this.state = {
+          setMode: currentMode,
+        };
+      });
     }
   }
 
   async select(selection: string): Promise<void> {
-    const modeValue = modes[this.boardType][selection];
+    const modeValue = modes.pint[selection];
     if (modeValue == null) {
       throw new Error(`Unable to retrieve value for mode ${selection}`);
     }
@@ -95,25 +112,48 @@ class ModeSelection extends Component<Props, State> {
       ONEWHEEL_SERVICE_UUID,
       CHARACTERISTICS.rideMode,
       modeValue,
-    );
-    this.setState({setMode: selection});
+    ).catch(err => {
+      console.error(err);
+    });
+    this.setState({setMode: modeValue});
   }
 
   render(): JSX.Element {
     // Render mode selection based on OW generation.
     return (
       <View>
-        <Text>Hello there!</Text>
         <Button
-          title="Redwood"
+          title="🌳 Redwood "
+          disabled={this.state?.setMode === modes.pint.redwood}
           onPress={() => {
             this.select('redwood');
           }}
         />
-        <Button title="Pacific/Mission" />
-        <Button title="Elevated" />
-        <Button title="Skyline/Delerium" />
-        <Button title="Custom Shaping" />
+        <Button
+          title="🌊 Pacific"
+          disabled={this.state?.setMode === modes.pint.pacific}
+          onPress={() => {
+            this.select('pacific');
+          }}
+        />
+        <Button
+          title="⛰️ Elevated"
+          disabled={this.state?.setMode === modes.pint.elevated}
+          onPress={() => {
+            this.select('elevated');
+          }}
+        />
+        <Button
+          title="🏙️ Skyline"
+          disabled={this.state?.setMode === modes.pint.skyline}
+          onPress={() => {
+            this.select('skyline');
+          }}
+        />
+        <Button
+          title="🧰 Custom Shaping"
+          disabled={this.state?.setMode === 9}
+        />
       </View>
     );
   }

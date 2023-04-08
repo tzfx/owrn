@@ -2,6 +2,8 @@ import React, {Component} from 'react';
 import {
   Alert,
   Button,
+  NativeEventEmitter,
+  NativeModules,
   SafeAreaView,
   StatusBar,
   StyleSheet,
@@ -12,14 +14,18 @@ import {
 
 import BleManager, {PeripheralInfo} from 'react-native-ble-manager';
 
+const BleManagerModule = NativeModules.BleManager;
+const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
+
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 
-import ModeSelection from './ModeSelection';
+// import ModeSelection from './ModeSelection';
 import {ConnectionState} from './ConnectionState';
 import ConnectionStatus from './ConnectionStatus';
 import {ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
 import Battery from './Battery';
 import Telemetry from './Telemetry';
+import ModeSelection from './ModeSelection';
 
 interface State {
   connectedDevice?: PeripheralInfo;
@@ -49,7 +55,11 @@ class App extends Component<{}, State> {
   private async tryBTScan(): Promise<void> {
     this.setState({connectionState: ConnectionState.SCANNING});
     try {
-      await BleManager.scan([ONEWHEEL_SERVICE_UUID], this.scanDuration, false);
+      await BleManager.scan(
+        [ONEWHEEL_SERVICE_UUID],
+        this.scanDuration,
+        false,
+      ).catch(() => {});
       // await BleManager.scan([], this.scanDuration, false);
       console.debug('Scan started.');
 
@@ -102,6 +112,27 @@ class App extends Component<{}, State> {
     } catch (err) {
       console.error('Bluetooth failed to start!!', err);
     }
+
+    BleManagerEmitter.addListener(
+      'BleManagerDisconnectPeripheral',
+      (peripheral: string) => {
+        if (this.state.connectedDevice?.id === peripheral) {
+          this.setState(
+            {
+              connectionState: ConnectionState.DISCONNECTED,
+              connectedDevice: undefined,
+              isConnected: false,
+            },
+            () => {
+              Alert.alert(
+                'Device Disconnected',
+                'The application has lost connection to the OneWheel.',
+              );
+            },
+          );
+        }
+      },
+    );
   }
 
   render(): JSX.Element {
@@ -117,16 +148,15 @@ class App extends Component<{}, State> {
           </Text>
           <View>
             {this.state.isConnected ? (
-              <View style={this.state.backgroundStyle}>
+              <View
+                style={{...this.state.backgroundStyle, ...styles.fullscreen}}>
                 <Text>
                   {this.state.connectedDevice?.name ??
                     this.state.connectedDevice?.id}
                 </Text>
-                {/* <Button title="Telemetry" />
-                <Button title="Mode Select" />
-                <Button title="Battery" /> */}
                 <Battery device={this.state.connectedDevice} />
                 <Telemetry device={this.state.connectedDevice} />
+                <ModeSelection device={this.state.connectedDevice} />
               </View>
             ) : (
               // <ModeSelection device={this.state.connectedDevice} />
