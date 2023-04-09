@@ -24,7 +24,11 @@ class Battery extends Component<Props, State> {
 
   constructor(props: Props) {
     super(props);
-    this.state = {};
+    this.state = {
+      percent: 0,
+      voltage: 52,
+      temperature: 0,
+    };
   }
 
   private CtoF(temperature: number) {
@@ -118,15 +122,17 @@ class Battery extends Component<Props, State> {
     // Render mode selection based on OW generation.
     return (
       <View>
+        <Text style={{marginLeft: 40, top: 65}}>
+          {this.CtoF(this.state.temperature)}&deg;F
+        </Text>
+        <Text style={{...styles.chartPercentLabel}}>{this.state.percent}%</Text>
         <VictoryPie
           height={350}
           startAngle={90}
           endAngle={-90}
           innerRadius={75}
-          labels={({datum}) => (datum.x !== '' ? datum.y + '%' : '')}
-          labelRadius={1}
+          labels={() => ''}
           style={{
-            labels: {fontSize: 36},
             data: {
               fill: ({datum}) =>
                 datum.x === '' ? 'lightgrey' : this.colorScale(datum.y),
@@ -170,5 +176,16 @@ class Battery extends Component<Props, State> {
     );
   }
 }
+
+const styles = {
+  chartPercentLabel: {
+    fontSize: 36,
+    marginTop: -50,
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    top: 175,
+    left: 5,
+  },
+};
 
 export default Battery;

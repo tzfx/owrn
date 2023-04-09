@@ -92,9 +92,9 @@ class ModeSelection extends Component<Props, State> {
         const bMode = Buffer.from(rMode);
         const currentMode = bMode.readUInt8(1);
         console.debug(`Current ride mode: ${currentMode}`);
-        this.state = {
+        this.setState({
           setMode: currentMode,
-        };
+        });
       });
     }
   }
@@ -120,41 +120,51 @@ class ModeSelection extends Component<Props, State> {
     this.setState({setMode: modeValue});
   }
 
+  private wrapIfSelected(title: string, mode: number) {
+    if (this.state?.setMode === mode) {
+      return `>>> ${title} <<<`;
+    }
+    return title;
+  }
+
   render(): JSX.Element {
     // Render mode selection based on OW generation.
     return (
       <View>
         <Button
-          title="🌳 Redwood "
+          title={this.wrapIfSelected('🌳 Redwood ', modes.pint.redwood)}
           disabled={this.state?.setMode === modes.pint.redwood}
           onPress={() => {
             this.select('redwood');
           }}
         />
         <Button
-          title="🌊 Pacific"
+          title={this.wrapIfSelected('🌊 Pacific', modes.pint.pacific)}
           disabled={this.state?.setMode === modes.pint.pacific}
           onPress={() => {
             this.select('pacific');
           }}
         />
         <Button
-          title="⛰️ Elevated"
+          title={this.wrapIfSelected('⛰️ Elevated', modes.pint.elevated)}
           disabled={this.state?.setMode === modes.pint.elevated}
           onPress={() => {
             this.select('elevated');
           }}
         />
         <Button
-          title="🏙️ Skyline"
+          title={this.wrapIfSelected('🏙️ Skyline', modes.pint.skyline)}
           disabled={this.state?.setMode === modes.pint.skyline}
           onPress={() => {
             this.select('skyline');
           }}
         />
         <Button
-          title="🧰 Custom Shaping"
-          disabled={this.state?.setMode === 9}
+          title={this.wrapIfSelected('🧰 Custom Shaping', modes.pint.custom)}
+          disabled={this.state?.setMode === modes.pint.custom}
+          onPress={() => {
+            this.select('custom');
+          }}
         />
       </View>
     );

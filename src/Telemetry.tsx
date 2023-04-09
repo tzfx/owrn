@@ -3,11 +3,12 @@ import React, {Component} from 'react';
 import {Buffer} from '@craftzdog/react-native-buffer';
 import {Text, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
+import {VictoryPie} from 'victory-native';
 import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
-import {VictoryPie, VictoryPolarAxis} from 'victory-native';
 
 interface Props {
   device?: PeripheralInfo;
+  autoconnect: boolean;
   debug?: boolean;
 }
 
@@ -23,6 +24,7 @@ interface State {
   tro?: number;
   y?: number;
   topSpeed: number;
+  speed: number;
 }
 
 class Telemetry extends Component<Props, State> {
@@ -37,6 +39,7 @@ class Telemetry extends Component<Props, State> {
     this.state = {
       lo: 0,
       rpm: 0,
+      speed: 0,
       topSpeed: 0.0,
       tro: 0,
     };
@@ -55,7 +58,11 @@ class Telemetry extends Component<Props, State> {
       )
         .then(rrpm => {
           const brpm = Buffer.from(rrpm);
-          this.setState({rpm: brpm.readUInt16BE(0)});
+          const rpm = brpm.readUInt16BE(0);
+          const speed = this.calculateSpeed(rpm);
+          const topSpeed =
+            speed > this.state.topSpeed ? speed : this.state.topSpeed;
+          this.setState({rpm: brpm.readUInt16BE(0), speed, topSpeed});
         })
         .catch(() => {
           if (this.#rpmPoller != null) {
@@ -191,16 +198,9 @@ class Telemetry extends Component<Props, State> {
       this.#telemetryPoller = setInterval(() => this.refreshTelemetry(), 5_000);
     } else {
       await this.refreshOdometers().catch(err => console.error(err));
-      this.#odoPoller = setInterval(() => this.refreshOdometers(), 1_000);
+      this.#odoPoller = setInterval(() => this.refreshOdometers(), 15_000);
       await this.refreshRPM().catch(err => console.error(err));
-      this.#rpmPoller = setInterval(() => this.refreshRPM(), 500);
-    }
-  }
-
-  componentDidUpdate(): void {
-    const speed = this.calculateSpeed(this.state.rpm);
-    if (speed > this.state.topSpeed) {
-      this.setState({topSpeed: speed});
+      this.#rpmPoller = setInterval(() => this.refreshRPM(), 750);
     }
   }
 
@@ -214,34 +214,52 @@ class Telemetry extends Component<Props, State> {
   }
 
   render(): JSX.Element {
-    const speed = this.calculateSpeed(this.state.rpm);
-    // Render mode selection based on OW generation.
+    // @TODO: Render mode selection based on OW generation.
     return (
       <View>
         <VictoryPie
+          animate={{duration: 100}}
           height={350}
           startAngle={90}
           endAngle={270}
           innerRadius={75}
           labels={({datum}) =>
-            datum.x !== '' ? (datum.y ?? 0).toFixed(1) + ' MPH' : ''
+            datum.x === 'top' ? this.state.topSpeed.toFixed(1) : ''
           }
-          labelRadius={() => -45}
+          labelPlacement={'perpendicular'}
+          labelPosition={'startAngle'}
+          labelRadius={() => 130}
           style={{
-            labels: {fontSize: 24},
+            // labels: {fontSize: 24},
             data: {
-              fill: ({datum}) => (datum.x === '' ? 'lightgrey' : '#457b9d'),
+              fill: ({datum}) =>
+                datum.x === ''
+                  ? 'lightgrey'
+                  : datum.x === 'top'
+                  ? '#b9d0df'
+                  : '#457b9d',
             },
             parent: {
               marginTop: -160,
             },
           }}
           data={[
-            {x: '', y: 20.0 - speed},
-            {x: 'speed', y: speed},
+            {x: '', y: 20.0 - this.state.speed},
+            {x: 'top', y: this.state.topSpeed - this.state.speed},
+            {x: 'speed', y: this.state.speed || 0.1},
           ]}
         />
-        <VictoryPolarAxis
+        <Text
+          style={{
+            fontSize: 36,
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            left: 10,
+            top: -175,
+          }}>
+          {this.state.speed.toFixed(1)} mph
+        </Text>
+        {/* <VictoryPolarAxis
           style={{
             parent: {marginTop: -350},
             axis: {stroke: 'black'},
@@ -254,9 +272,15 @@ class Telemetry extends Component<Props, State> {
           maxDomain={20}
           tickValues={[0, +this.state.topSpeed.toFixed(1)]}
           height={350}
-        />
-        <Text style={{textAlign: 'right'}}>
-          {this.state.lo} mi, {this.state.topSpeed.toFixed(1)} &and;
+        /> */}
+        <Text
+          style={{
+            textAlign: 'right',
+            marginRight: 40,
+            marginTop: -75,
+            top: -10,
+          }}>
+          ({this.state.tro}) {this.state.lo} mi
         </Text>
         {!this.props.debug ?? (
           <View>
