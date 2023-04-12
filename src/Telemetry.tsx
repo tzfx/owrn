@@ -198,7 +198,7 @@ class Telemetry extends Component<Props, State> {
       this.#telemetryPoller = setInterval(() => this.refreshTelemetry(), 5_000);
     } else {
       await this.refreshOdometers().catch(err => console.error(err));
-      this.#odoPoller = setInterval(() => this.refreshOdometers(), 15_000);
+      this.#odoPoller = setInterval(() => this.refreshOdometers(), 30_000);
       await this.refreshRPM().catch(err => console.error(err));
       this.#rpmPoller = setInterval(() => this.refreshRPM(), 750);
     }

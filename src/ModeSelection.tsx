@@ -25,7 +25,9 @@ import {inferBoardFromHardwareRevision} from './rewheel/board';
 // }
 
 // model.mode <-
-const modes: {[board: string]: {[mode: string]: number}} = {
+const modes: {
+  [board: string]: {[mode: string]: {symbol: string; value: number}};
+} = {
   // any: {
   // enterfactorymode: 0xcbcb,
   // calibratemotorold: 0xcccc,
@@ -34,24 +36,24 @@ const modes: {[board: string]: {[mode: string]: number}} = {
   // factorymode: 0xcb,
   //   custom: 0x09,
   // },
-  v1: {
-    classic: 0x01,
-    extreme: 0x02,
-    elevated: 0x03,
-  },
+  // v1: {
+  //   classic: 0x01,
+  //   extreme: 0x02,
+  //   elevated: 0x03,
+  // },
   xr: {
-    sequoia: 0x04,
-    cruz: 0x05,
-    mission: 0x06,
-    delirium: 0x08,
-    custom: 0x09,
+    sequoia: {symbol: '🌳', value: 0x04},
+    cruz: {symbol: '🚢', value: 0x05},
+    mission: {symbol: '🛕', value: 0x06},
+    delirium: {symbol: '😵‍💫', value: 0x08},
+    custom: {symbol: '🧰', value: 0x09},
   },
   pint: {
-    redwood: 0x05,
-    pacific: 0x06,
-    elevated: 0x07,
-    skyline: 0x08,
-    custom: 0x09,
+    redwood: {symbol: '🌳', value: 0x05},
+    pacific: {symbol: '🌊', value: 0x06},
+    elevated: {symbol: '⛰️', value: 0x07},
+    skyline: {symbol: '🏙️', value: 0x08},
+    custom: {symbol: '🧰', value: 0x09},
   },
 };
 
@@ -64,7 +66,7 @@ interface State {
 }
 
 class ModeSelection extends Component<Props, State> {
-  boardType: string = 'Pint';
+  boardType: string = 'pint';
 
   constructor(props: Props) {
     super(props);
@@ -81,8 +83,11 @@ class ModeSelection extends Component<Props, State> {
         const bhwr = Buffer.from(rhwr);
         const hwRevision = bhwr.readUInt16BE(0);
 
-        console.debug(`Retreived board hardware revision: ${hwRevision}`);
-        this.boardType = inferBoardFromHardwareRevision(hwRevision);
+        this.boardType =
+          inferBoardFromHardwareRevision(hwRevision).toLowerCase();
+        console.debug(
+          `Retrieved board hardware revision: ${hwRevision} (${this.boardType})`,
+        );
       });
       BTManager.read(
         this.props.device.id,
@@ -100,7 +105,7 @@ class ModeSelection extends Component<Props, State> {
   }
 
   async select(selection: string): Promise<void> {
-    const modeValue = modes.pint[selection];
+    const modeValue = modes[this.boardType][selection].value;
     if (modeValue == null) {
       throw new Error(`Unable to retrieve value for mode ${selection}`);
     }
@@ -131,41 +136,21 @@ class ModeSelection extends Component<Props, State> {
     // Render mode selection based on OW generation.
     return (
       <View>
-        <Button
-          title={this.wrapIfSelected('🌳 Redwood ', modes.pint.redwood)}
-          disabled={this.state?.setMode === modes.pint.redwood}
-          onPress={() => {
-            this.select('redwood');
-          }}
-        />
-        <Button
-          title={this.wrapIfSelected('🌊 Pacific', modes.pint.pacific)}
-          disabled={this.state?.setMode === modes.pint.pacific}
-          onPress={() => {
-            this.select('pacific');
-          }}
-        />
-        <Button
-          title={this.wrapIfSelected('⛰️ Elevated', modes.pint.elevated)}
-          disabled={this.state?.setMode === modes.pint.elevated}
-          onPress={() => {
-            this.select('elevated');
-          }}
-        />
-        <Button
-          title={this.wrapIfSelected('🏙️ Skyline', modes.pint.skyline)}
-          disabled={this.state?.setMode === modes.pint.skyline}
-          onPress={() => {
-            this.select('skyline');
-          }}
-        />
-        <Button
-          title={this.wrapIfSelected('🧰 Custom Shaping', modes.pint.custom)}
-          disabled={this.state?.setMode === modes.pint.custom}
-          onPress={() => {
-            this.select('custom');
-          }}
-        />
+        {Object.entries(modes[this.boardType]).map(
+          ([mode, {symbol, value}]) => (
+            <Button
+              title={this.wrapIfSelected(
+                `${symbol} ${mode[0].toUpperCase() + mode.slice(1)}`,
+                value,
+              )}
+              key={mode}
+              disabled={this.state?.setMode === value}
+              onPress={() => {
+                this.select(mode);
+              }}
+            />
+          ),
+        )}
       </View>
     );
   }

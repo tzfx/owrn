@@ -1,6 +1,6 @@
 export const ONEWHEEL_SERVICE_UUID = 'e659f300-ea98-11e3-ac10-0800200c9a66';
 
-export const  CHARACTERISTICS = {
+export const CHARACTERISTICS = {
   aggressiveness: 'e659f31d-ea98-11e3-ac10-0800200c9a66',
   batteryCells: 'e659f31b-ea98-11e3-ac10-0800200c9a66',
   batteryCritical: 'e659f304-ea98-11e3-ac10-0800200c9a66',

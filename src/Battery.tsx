@@ -27,7 +27,7 @@ class Battery extends Component<Props, State> {
     this.state = {
       percent: 0,
       voltage: 52,
-      temperature: 0,
+      temperature: 20.55,
     };
   }
 
@@ -124,6 +124,7 @@ class Battery extends Component<Props, State> {
       <View>
         <Text style={{marginLeft: 40, top: 65}}>
           {this.CtoF(this.state.temperature)}&deg;F
+          {this.state.temperature < 3 ? '🥶' : ''}
         </Text>
         <Text style={{...styles.chartPercentLabel}}>{this.state.percent}%</Text>
         <VictoryPie

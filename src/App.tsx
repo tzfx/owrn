@@ -14,16 +14,15 @@ import {
 } from 'react-native';
 import BleManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
-const BleManagerModule = NativeModules.BleManager;
-const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
-// import ModeSelection from './ModeSelection';
 import Battery from './Battery';
+import BoardHeader from './BoardHeader';
 import {ConnectionState} from './ConnectionState';
 import ConnectionStatus from './ConnectionStatus';
 import ModeSelection from './ModeSelection';
 import {ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
 import Telemetry from './Telemetry';
-import BoardHeader from './BoardHeader';
+const BleManagerModule = NativeModules.BleManager;
+const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 interface State {
   connectedDevice?: PeripheralInfo;
@@ -54,7 +53,7 @@ class App extends Component<{}, State> {
 
   private readonly storageid_savedboard = 'owrn-saved-board';
 
-  private async tryBTScan(): Promise<void> {
+  private async tryBTScan(deviceId?: string): Promise<void> {
     this.setState({connectionState: ConnectionState.SCANNING});
     try {
       await BleManager.scan(
@@ -62,25 +61,37 @@ class App extends Component<{}, State> {
         this.scanDuration,
         false,
       ).catch(() => {});
-      // await BleManager.scan([], this.scanDuration, false);
       console.debug('Scan started.');
 
-      const deviceRefresh = setInterval(async () => {
+      const refresh = setInterval(async () => {
         const devices = await BleManager.getDiscoveredPeripherals();
         console.debug('Devices:', devices);
         this.setState({devices});
-      }, (this.scanDuration / 4) * 1000);
-      setTimeout(() => {
-        console.debug('Scan stopped.');
-        clearInterval(deviceRefresh);
-        this.setState({connectionState: ConnectionState.DISCONNECTED});
-        if (this.state.devices.length === 0) {
-          Alert.alert(
-            'No devices found',
-            'There were no devices found within range.\nMake sure your onewheel is powered on and not connected to another application.',
-          );
+        if (deviceId && devices.some(d => d.id === deviceId)) {
+          clearInterval(refresh);
         }
-      }, this.scanDuration * 1000);
+      }, 1000);
+
+      await new Promise(res =>
+        setTimeout(() => res(true), this.scanDuration * 1000),
+      );
+      clearInterval(refresh);
+      this.setState({connectionState: ConnectionState.DISCONNECTED});
+
+      if (
+        deviceId != null &&
+        this.state.devices.every(d => d.id !== deviceId)
+      ) {
+        console.warn(
+          `Unable to locate ${deviceId}. Will not be able to autoconnect.`,
+        );
+      }
+      if (this.state.devices.length === 0) {
+        Alert.alert(
+          'No devices found',
+          'There were no devices found within range.\nMake sure your onewheel is powered on and not connected to another application.',
+        );
+      }
     } catch (err) {
       console.error('Failed to scan for bt devices.', err);
     }
@@ -90,6 +101,9 @@ class App extends Component<{}, State> {
     console.debug(`Attempting connection to ${deviceId}`);
     this.setState({connectionState: ConnectionState.CONNECTING}, async () => {
       try {
+        if (this.state.devices.every(d => d.id !== deviceId)) {
+          throw new Error(`Device ${deviceId} not detected`);
+        }
         await BleManager.connect(deviceId);
         const connectedDevice = await BleManager.retrieveServices(deviceId);
         if (connectedDevice == null) {
@@ -106,10 +120,7 @@ class App extends Component<{}, State> {
         this.setState({
           connectionState: ConnectionState.DISCONNECTED,
         });
-        Alert.alert(
-          'Unabled to autoconnect.',
-          'Unable to autoconnect to saved board. Please make sure the board is turned on and try to scan.',
-        );
+        console.error(err);
       }
     });
   }
@@ -131,13 +142,15 @@ class App extends Component<{}, State> {
       console.debug('Bluetooth initialized.');
       BleManagerEmitter.addListener(
         'BleManagerDisconnectPeripheral',
-        (peripheral: string) => {
+        ({peripheral}) => {
+          console.debug(`Disconnection: ${JSON.stringify(peripheral)}`);
           if (this.state.connectedDevice?.id === peripheral) {
             this.setState(
               {
                 connectionState: ConnectionState.DISCONNECTED,
                 connectedDevice: undefined,
                 isConnected: false,
+                devices: [],
               },
               () => {
                 Alert.alert(
@@ -151,7 +164,8 @@ class App extends Component<{}, State> {
       );
       const saved = await AsyncStorage.getItem(this.storageid_savedboard);
       if (saved != null) {
-        this.connect(saved);
+        await this.tryBTScan(saved);
+        await this.connect(saved);
       }
     } catch (err) {
       console.error('Bluetooth failed to start!!', err);
