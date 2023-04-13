@@ -46,5 +46,5 @@ export const getRevisionInformation = (revision: number) => {
 export const inferBoardFromHardwareRevision = (revision: number) => {
   const generation = Math.floor(revision / 1000);
 
-  return Object.keys(BoardGeneration)[generation - 1];
+  return Object.keys(BoardGeneration)[generation - 1] as BoardGenerationName;
 };

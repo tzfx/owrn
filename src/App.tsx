@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, {Component} from 'react';
 import {
   Alert,
@@ -12,15 +11,19 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
-import BleManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
+
+import {ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
+import {StorageService} from './StorageService';
+
 import Battery from './Battery';
 import BoardHeader from './BoardHeader';
 import {ConnectionState} from './ConnectionState';
 import ConnectionStatus from './ConnectionStatus';
 import ModeSelection from './ModeSelection';
-import {ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
 import Telemetry from './Telemetry';
+
+import BleManager, {PeripheralInfo} from 'react-native-ble-manager';
 const BleManagerModule = NativeModules.BleManager;
 const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
@@ -109,7 +112,7 @@ class App extends Component<{}, State> {
         if (connectedDevice == null) {
           throw new Error('Connection failed');
         }
-        console.debug('Connected:', connectedDevice.name ?? 'idk');
+        console.debug('Connected: ', connectedDevice.name ?? 'unknown');
         this.setState({
           connectionState: ConnectionState.CONNECTED,
           connectedDevice,
@@ -162,10 +165,11 @@ class App extends Component<{}, State> {
           }
         },
       );
-      const saved = await AsyncStorage.getItem(this.storageid_savedboard);
-      if (saved != null) {
-        await this.tryBTScan(saved);
-        await this.connect(saved);
+      const saved = await StorageService.getSavedBoards();
+      const auto = saved.find(b => b.autoconnect)?.id;
+      if (auto != null) {
+        await this.tryBTScan(auto);
+        await this.connect(auto);
       }
     } catch (err) {
       console.error('Bluetooth failed to start!!', err);
