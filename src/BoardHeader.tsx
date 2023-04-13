@@ -1,37 +1,110 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, {Component} from 'react';
 import {PeripheralInfo} from 'react-native-ble-manager';
-import {Switch, Text, View} from 'react-native';
+import {Button, Modal, Switch, Text, TextInput, View} from 'react-native';
+
+import {SavedBoard, StorageService} from './StorageService';
 
 type Props = {
   connectedDevice?: PeripheralInfo;
   autoconnect: boolean;
+  board?: SavedBoard;
 };
 
 type State = {
   autoconnect: boolean;
+  edittingName: boolean;
+  boardName?: string;
+  tempBoardName?: string;
 };
 
 class BoardHeader extends Component<Props, State> {
-  private readonly storageid_savedboard = 'owrn-saved-board';
-
   constructor(props: Props) {
     super(props);
-    this.state = {autoconnect: props.autoconnect};
+    this.state = {
+      autoconnect: props.autoconnect,
+      edittingName: false,
+      boardName: this.props.board?.name ?? undefined,
+      tempBoardName: this.props.board?.name ?? undefined,
+    };
   }
-  private async saveConnection(id?: string) {
-    if (id != null) {
-      await AsyncStorage.setItem(this.storageid_savedboard, id);
-    } else {
-      await AsyncStorage.removeItem(this.storageid_savedboard);
-    }
+  private async saveConnection(id: string, name?: string) {
+    return await StorageService.saveBoard({
+      id,
+      name: name ?? id,
+      autoconnect: this.state.autoconnect,
+    });
+  }
+
+  private async deleteConnection(id: string) {
+    return await StorageService.removeBoard(id);
   }
   render() {
     return (
       <View>
-        <Text style={{...styles.boardName}}>
-          {this.props.connectedDevice?.name ?? this.props.connectedDevice?.id}
-        </Text>
+        <Modal visible={this.state.edittingName}>
+          <View
+            style={{
+              padding: 100,
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}>
+            <Text style={{fontSize: 20}}>Rename your board</Text>
+            <TextInput
+              style={{
+                height: 40,
+                margin: 0,
+                borderWidth: 1,
+                marginTop: 10,
+                paddingVertical: 5,
+                paddingHorizontal: 50,
+              }}
+              value={this.state.tempBoardName}
+              placeholder={this.props.connectedDevice?.name}
+              onChangeText={tempBoardName => {
+                this.setState({tempBoardName});
+              }}
+            />
+            <View style={{...styles.flexRow}}>
+              <Button
+                color={'grey'}
+                title="Cancel"
+                onPress={() => this.setState({edittingName: false})}
+              />
+              <Button
+                title="Save"
+                onPress={() => {
+                  if (this.props.connectedDevice) {
+                    this.saveConnection(
+                      this.props.connectedDevice.id,
+                      this.state.tempBoardName,
+                    ).finally(() =>
+                      this.setState({
+                        boardName: this.state.tempBoardName,
+                        edittingName: false,
+                      }),
+                    );
+                  }
+                }}
+              />
+            </View>
+          </View>
+        </Modal>
+        <View
+          style={{
+            flexDirection: 'row',
+          }}>
+          <View style={{top: -20, marginLeft: '-25%'}}>
+            <Button
+              title="✏️"
+              onPress={() => this.setState({edittingName: true})}
+            />
+          </View>
+          <Text style={{...styles.boardName}}>
+            {this.state.boardName ??
+              this.props.connectedDevice?.name ??
+              this.props.connectedDevice?.id}
+          </Text>
+        </View>
         <View style={{...styles.switchContainer}}>
           <Text
             style={{
@@ -41,8 +114,12 @@ class BoardHeader extends Component<Props, State> {
           </Text>
           <Switch
             onValueChange={autoconnect =>
-              this.saveConnection(
-                autoconnect ? this.props.connectedDevice?.id : undefined,
+              (autoconnect
+                ? this.saveConnection(
+                    this.props.connectedDevice!.id,
+                    this.state.boardName,
+                  )
+                : this.deleteConnection(this.props.connectedDevice!.id)
               ).then(() => this.setState({autoconnect}))
             }
             value={this.state.autoconnect}
@@ -68,6 +145,9 @@ const styles = {
   switchLabel: {
     fontSize: 20,
     paddingRight: 10,
+  },
+  flexRow: {
+    flexDirection: 'row',
   },
 };
 

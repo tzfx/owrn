@@ -214,7 +214,6 @@ class Telemetry extends Component<Props, State> {
   }
 
   render(): JSX.Element {
-    // @TODO: Render mode selection based on OW generation.
     return (
       <View>
         <VictoryPie
@@ -230,7 +229,6 @@ class Telemetry extends Component<Props, State> {
           labelPosition={'startAngle'}
           labelRadius={() => 130}
           style={{
-            // labels: {fontSize: 24},
             data: {
               fill: ({datum}) =>
                 datum.x === ''
@@ -251,28 +249,10 @@ class Telemetry extends Component<Props, State> {
         />
         <Text
           style={{
-            fontSize: 36,
-            marginLeft: 'auto',
-            marginRight: 'auto',
-            left: 10,
-            top: -175,
+            ...styles.speedLabel,
           }}>
           {this.state.speed.toFixed(1)} mph
         </Text>
-        {/* <VictoryPolarAxis
-          style={{
-            parent: {marginTop: -350},
-            axis: {stroke: 'black'},
-            grid: {stroke: () => 'black'},
-          }}
-          innerRadius={75}
-          startAngle={180}
-          endAngle={180 + (this.state.topSpeed / 20.0) * 180}
-          minDomain={0}
-          maxDomain={20}
-          tickValues={[0, +this.state.topSpeed.toFixed(1)]}
-          height={350}
-        /> */}
         <Text
           style={{
             textAlign: 'right',
@@ -303,5 +283,15 @@ class Telemetry extends Component<Props, State> {
     );
   }
 }
+
+const styles = {
+  speedLabel: {
+    fontSize: 36,
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    left: 10,
+    top: -175,
+  },
+};
 
 export default Telemetry;

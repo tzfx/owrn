@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, {Component} from 'react';
 import {
   Alert,
@@ -12,15 +11,19 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
-import BleManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
+
+import {ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
+import {StorageService, SavedBoard} from './StorageService';
+
 import Battery from './Battery';
 import BoardHeader from './BoardHeader';
 import {ConnectionState} from './ConnectionState';
 import ConnectionStatus from './ConnectionStatus';
 import ModeSelection from './ModeSelection';
-import {ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
 import Telemetry from './Telemetry';
+
+import BleManager, {PeripheralInfo} from 'react-native-ble-manager';
 const BleManagerModule = NativeModules.BleManager;
 const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
@@ -34,12 +37,15 @@ interface State {
     backgroundColor: string;
   };
   boardsaved: boolean;
+  board?: SavedBoard;
+  savedBoards: SavedBoard[];
 }
 
 class App extends Component<{}, State> {
   state: Readonly<State> = {
     connectionState: ConnectionState.DISCONNECTED,
     devices: [],
+    savedBoards: [],
     isConnected: false,
     isDarkMode: false,
     backgroundStyle: {
@@ -50,8 +56,6 @@ class App extends Component<{}, State> {
 
   // Seconds to scan for a valid device.
   private readonly scanDuration = 5;
-
-  private readonly storageid_savedboard = 'owrn-saved-board';
 
   private async tryBTScan(deviceId?: string): Promise<void> {
     this.setState({connectionState: ConnectionState.SCANNING});
@@ -109,7 +113,7 @@ class App extends Component<{}, State> {
         if (connectedDevice == null) {
           throw new Error('Connection failed');
         }
-        console.debug('Connected:', connectedDevice.name ?? 'idk');
+        console.debug('Connected: ', connectedDevice.name ?? 'unknown');
         this.setState({
           connectionState: ConnectionState.CONNECTED,
           connectedDevice,
@@ -139,6 +143,8 @@ class App extends Component<{}, State> {
     // Initialize Bluetooth Manager
     try {
       await BleManager.start({showAlert: true});
+      // wait 100ms
+      await new Promise(res => setTimeout(() => res(true), 100));
       console.debug('Bluetooth initialized.');
       BleManagerEmitter.addListener(
         'BleManagerDisconnectPeripheral',
@@ -162,10 +168,12 @@ class App extends Component<{}, State> {
           }
         },
       );
-      const saved = await AsyncStorage.getItem(this.storageid_savedboard);
-      if (saved != null) {
-        await this.tryBTScan(saved);
-        await this.connect(saved);
+      const savedBoards = await StorageService.getSavedBoards();
+      const board = savedBoards.find(b => b.autoconnect);
+      this.setState({savedBoards, board});
+      if (board?.id != null) {
+        await this.tryBTScan(board.id);
+        await this.connect(board.id);
       }
     } catch (err) {
       console.error('Bluetooth failed to start!!', err);
@@ -188,6 +196,7 @@ class App extends Component<{}, State> {
               <View
                 style={{...this.state.backgroundStyle, ...styles.fullscreen}}>
                 <BoardHeader
+                  board={this.state.board}
                   autoconnect={this.state.boardsaved}
                   connectedDevice={this.state.connectedDevice}
                 />
@@ -229,7 +238,11 @@ class App extends Component<{}, State> {
                 />
                 {this.state.devices.map(dev => (
                   <Button
-                    title={dev.name ?? dev.id}
+                    title={
+                      this.state.savedBoards.find(d => d.id === dev.id)?.name ??
+                      dev.name ??
+                      dev.id
+                    }
                     key={dev.id}
                     disabled={
                       this.state.connectionState !==
