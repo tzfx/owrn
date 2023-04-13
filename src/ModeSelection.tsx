@@ -39,6 +39,9 @@ interface State {
 }
 
 class ModeSelection extends Component<Props, State> {
+  state: Readonly<State> = {
+    boardType: 'Pint',
+  };
   componentDidMount(): void {
     if (this.props.device != null) {
       Promise.all([

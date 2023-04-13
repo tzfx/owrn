@@ -14,7 +14,7 @@ import {
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 
 import {ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
-import {StorageService} from './StorageService';
+import {StorageService, SavedBoard} from './StorageService';
 
 import Battery from './Battery';
 import BoardHeader from './BoardHeader';
@@ -37,12 +37,15 @@ interface State {
     backgroundColor: string;
   };
   boardsaved: boolean;
+  board?: SavedBoard;
+  savedBoards: SavedBoard[];
 }
 
 class App extends Component<{}, State> {
   state: Readonly<State> = {
     connectionState: ConnectionState.DISCONNECTED,
     devices: [],
+    savedBoards: [],
     isConnected: false,
     isDarkMode: false,
     backgroundStyle: {
@@ -53,8 +56,6 @@ class App extends Component<{}, State> {
 
   // Seconds to scan for a valid device.
   private readonly scanDuration = 5;
-
-  private readonly storageid_savedboard = 'owrn-saved-board';
 
   private async tryBTScan(deviceId?: string): Promise<void> {
     this.setState({connectionState: ConnectionState.SCANNING});
@@ -142,6 +143,8 @@ class App extends Component<{}, State> {
     // Initialize Bluetooth Manager
     try {
       await BleManager.start({showAlert: true});
+      // wait 100ms
+      await new Promise(res => setTimeout(() => res(true), 100));
       console.debug('Bluetooth initialized.');
       BleManagerEmitter.addListener(
         'BleManagerDisconnectPeripheral',
@@ -165,11 +168,12 @@ class App extends Component<{}, State> {
           }
         },
       );
-      const saved = await StorageService.getSavedBoards();
-      const auto = saved.find(b => b.autoconnect)?.id;
-      if (auto != null) {
-        await this.tryBTScan(auto);
-        await this.connect(auto);
+      const savedBoards = await StorageService.getSavedBoards();
+      const board = savedBoards.find(b => b.autoconnect);
+      this.setState({savedBoards, board});
+      if (board?.id != null) {
+        await this.tryBTScan(board.id);
+        await this.connect(board.id);
       }
     } catch (err) {
       console.error('Bluetooth failed to start!!', err);
@@ -192,6 +196,7 @@ class App extends Component<{}, State> {
               <View
                 style={{...this.state.backgroundStyle, ...styles.fullscreen}}>
                 <BoardHeader
+                  board={this.state.board}
                   autoconnect={this.state.boardsaved}
                   connectedDevice={this.state.connectedDevice}
                 />
@@ -233,7 +238,11 @@ class App extends Component<{}, State> {
                 />
                 {this.state.devices.map(dev => (
                   <Button
-                    title={dev.name ?? dev.id}
+                    title={
+                      this.state.savedBoards.find(d => d.id === dev.id)?.name ??
+                      dev.name ??
+                      dev.id
+                    }
                     key={dev.id}
                     disabled={
                       this.state.connectionState !==
