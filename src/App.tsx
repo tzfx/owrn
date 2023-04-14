@@ -54,6 +54,8 @@ class App extends Component<{}, State> {
     boardsaved: false,
   };
 
+  private debug = false;
+
   // Seconds to scan for a valid device.
   private readonly scanDuration = 5;
 
@@ -192,18 +194,23 @@ class App extends Component<{}, State> {
             <Text style={styles.green}>ow</Text>.rn
           </Text>
           <View>
-            {this.state.isConnected ? (
+            {this.state.isConnected || this.debug === true ? (
               <View
                 style={{...this.state.backgroundStyle, ...styles.fullscreen}}>
                 <BoardHeader
                   board={this.state.board}
-                  autoconnect={this.state.boardsaved}
+                  handleSave={async () => {
+                    const board = await StorageService.getBoard(
+                      this.state.connectedDevice!.id,
+                    );
+                    this.setState({board});
+                  }}
                   connectedDevice={this.state.connectedDevice}
                 />
 
                 <Battery device={this.state.connectedDevice} />
                 <Telemetry
-                  autoconnect={this.state.boardsaved}
+                  board={this.state.board}
                   device={this.state.connectedDevice}
                 />
                 <ModeSelection device={this.state.connectedDevice} />
