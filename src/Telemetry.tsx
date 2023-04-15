@@ -5,7 +5,7 @@ import {Text, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {VictoryPie} from 'victory-native';
 import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
-import {SavedBoard} from './StorageService';
+import {SavedBoard, StorageService} from './StorageService';
 
 interface Props {
   board?: SavedBoard;
@@ -41,7 +41,7 @@ class Telemetry extends Component<Props, State> {
       lo: 0,
       rpm: 0,
       speed: 0,
-      topSpeed: 0.0,
+      topSpeed: props.board?.topSpeed ?? 0.0,
       tro: 0,
     };
   }
@@ -67,6 +67,12 @@ class Telemetry extends Component<Props, State> {
           const speed = this.calculateSpeed(rpm, this.props.board?.wheelSize);
           const topSpeed =
             speed > this.state.topSpeed ? speed : this.state.topSpeed;
+          if (
+            this.props.board != null &&
+            topSpeed > (this.props.board?.topSpeed ?? 0)
+          ) {
+            StorageService.saveBoard({...this.props.board, topSpeed});
+          }
           this.setState({rpm: brpm.readUInt16BE(0), speed, topSpeed});
         })
         .catch(() => {
@@ -250,7 +256,7 @@ class Telemetry extends Component<Props, State> {
             },
           }}
           data={[
-            {x: '', y: 30.0 - this.state.speed},
+            {x: '', y: 25.0 - this.state.topSpeed},
             {x: 'top', y: this.state.topSpeed - this.state.speed},
             {x: 'speed', y: this.state.speed || 0.1},
           ]}

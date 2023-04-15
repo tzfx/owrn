@@ -14,6 +14,7 @@ export type SavedBoard = {
   name: string;
   autoconnect: boolean;
   wheelSize: number;
+  topSpeed?: number;
 };
 
 export interface IStorageService {
@@ -24,11 +25,12 @@ export interface IStorageService {
 }
 
 const reviveBoard: (dry: string) => SavedBoard = dry => {
-  const {id, name, autoconnect, wheelSize} = JSON.parse(dry);
+  const {id, name, autoconnect, topSpeed, wheelSize} = JSON.parse(dry);
   return {
     id,
     name,
     autoconnect,
+    topSpeed,
     wheelSize,
   };
 };
