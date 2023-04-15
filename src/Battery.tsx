@@ -152,15 +152,15 @@ class Battery extends Component<Props, State> {
               marginTop: -160,
             },
           }}
-          medianLabels={() => this.state.voltage}
+          medianLabels={() => this.state.voltage?.toFixed(1) + 'v'}
           data={[
             {
               x: '',
               min: 43.5,
               median: this.state.voltage,
               max: 62.25,
-              q1: this.state.voltage! - 1,
-              q3: this.state.voltage! + 1,
+              q1: this.state.voltage! - 0.15,
+              q3: this.state.voltage! + 0.15,
             },
           ]}
         />
