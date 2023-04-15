@@ -5,10 +5,11 @@ import {Text, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {VictoryPie} from 'victory-native';
 import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
+import {SavedBoard, StorageService} from './StorageService';
 
 interface Props {
+  board?: SavedBoard;
   device?: PeripheralInfo;
-  autoconnect: boolean;
   debug?: boolean;
 }
 
@@ -40,13 +41,17 @@ class Telemetry extends Component<Props, State> {
       lo: 0,
       rpm: 0,
       speed: 0,
-      topSpeed: 0.0,
+      topSpeed: props.board?.topSpeed ?? 0.0,
       tro: 0,
     };
   }
 
-  private calculateSpeed(rpm: number, diameter: number = 11) {
-    return (diameter * Math.PI * rpm * 60) / 5_280 / 10;
+  private calculateSpeed(rpm: number, diameter: number = 10.5) {
+    return (diameter * Math.PI * rpm * 60) / (12 * 5_280);
+  }
+
+  private rotations2Distance(rotations: number, diameter: number = 10.5) {
+    return (diameter * rotations) / (12 * 5_280);
   }
 
   private refreshRPM() {
@@ -59,9 +64,15 @@ class Telemetry extends Component<Props, State> {
         .then(rrpm => {
           const brpm = Buffer.from(rrpm);
           const rpm = brpm.readUInt16BE(0);
-          const speed = this.calculateSpeed(rpm);
+          const speed = this.calculateSpeed(rpm, this.props.board?.wheelSize);
           const topSpeed =
             speed > this.state.topSpeed ? speed : this.state.topSpeed;
+          if (
+            this.props.board != null &&
+            topSpeed > (this.props.board?.topSpeed ?? 0)
+          ) {
+            StorageService.saveBoard({...this.props.board, topSpeed});
+          }
           this.setState({rpm: brpm.readUInt16BE(0), speed, topSpeed});
         })
         .catch(() => {
@@ -91,7 +102,10 @@ class Telemetry extends Component<Props, State> {
           const [blo, bto] = [Buffer.from(rlo), Buffer.from(rto)];
           this.setState({
             lo: blo.readUInt16BE(0),
-            tro: bto.readUInt16BE(0),
+            tro: this.rotations2Distance(
+              bto.readUInt16BE(0),
+              this.props.board?.wheelSize,
+            ),
           });
         })
         .catch(() => {
@@ -242,7 +256,7 @@ class Telemetry extends Component<Props, State> {
             },
           }}
           data={[
-            {x: '', y: 20.0 - this.state.speed},
+            {x: '', y: 25.0 - this.state.topSpeed},
             {x: 'top', y: this.state.topSpeed - this.state.speed},
             {x: 'speed', y: this.state.speed || 0.1},
           ]}
@@ -251,7 +265,14 @@ class Telemetry extends Component<Props, State> {
           style={{
             ...styles.speedLabel,
           }}>
-          {this.state.speed.toFixed(1)} mph
+          {this.state.speed.toFixed(1)}
+        </Text>
+        <Text
+          style={{
+            ...styles.speedLabel,
+            fontSize: 20,
+          }}>
+          mph
         </Text>
         <Text
           style={{
@@ -260,7 +281,7 @@ class Telemetry extends Component<Props, State> {
             marginTop: -75,
             top: -10,
           }}>
-          ({this.state.tro}) {this.state.lo} mi
+          ({this.state.tro?.toFixed(2)}) {this.state.lo} mi
         </Text>
         {!this.props.debug ?? (
           <View>
@@ -289,7 +310,6 @@ const styles = {
     fontSize: 36,
     marginLeft: 'auto',
     marginRight: 'auto',
-    left: 10,
     top: -175,
   },
 };
