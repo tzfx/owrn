@@ -24,6 +24,7 @@ import ModeSelection from './ModeSelection';
 import Telemetry from './Telemetry';
 
 import BleManager, {PeripheralInfo} from 'react-native-ble-manager';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 const BleManagerModule = NativeModules.BleManager;
 const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
@@ -57,7 +58,7 @@ class App extends Component<{}, State> {
   private debug = false;
 
   // Seconds to scan for a valid device.
-  private readonly scanDuration = 5;
+  private readonly scanDuration = 1;
 
   private async tryBTScan(deviceId?: string): Promise<void> {
     this.setState({connectionState: ConnectionState.SCANNING});
@@ -76,7 +77,7 @@ class App extends Component<{}, State> {
         if (deviceId && devices.some(d => d.id === deviceId)) {
           clearInterval(refresh);
         }
-      }, 1000);
+      }, 250);
 
       await new Promise(res =>
         setTimeout(() => res(true), this.scanDuration * 1000),
@@ -141,6 +142,10 @@ class App extends Component<{}, State> {
 
       this.setState({backgroundStyle, isDarkMode});
     })().catch(() => {}); // NOOP.
+
+    if (this.debug) {
+      await AsyncStorage.clear();
+    }
 
     // Initialize Bluetooth Manager
     try {

@@ -137,7 +137,7 @@ class BoardHeader extends Component<Props, State> {
             />
           </View>
           <Text style={{...styles.boardName}}>
-            {this.state.boardName ??
+            {this.props.board?.name ??
               this.props.connectedDevice?.name ??
               this.props.connectedDevice?.id}
           </Text>
