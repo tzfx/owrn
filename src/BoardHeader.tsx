@@ -1,16 +1,18 @@
 import React, {Component} from 'react';
-import {PeripheralInfo} from 'react-native-ble-manager';
 import {
   Button,
   Modal,
   SafeAreaView,
+  StyleSheet,
   Switch,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import {PeripheralInfo} from 'react-native-ble-manager';
 
 import {SavedBoard, StorageService} from './StorageService';
+import {Typography} from './Typography';
 
 type Props = {
   connectedDevice?: PeripheralInfo;
@@ -54,29 +56,11 @@ class BoardHeader extends Component<Props, State> {
     return (
       <View>
         <Modal visible={this.state.editting}>
-          <SafeAreaView
-            style={{
-              backgroundColor: '#56bf81',
-              flexDirection: 'column',
-              alignItems: 'center',
-              height: '100%',
-            }}>
-            <View
-              style={{
-                backgroundColor: 'white',
-                width: '100%',
-                padding: 30,
-                marginHorizontal: 0,
-              }}>
-              <Text style={{fontSize: 20}}>Board Name</Text>
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalInput}>
+              <Text style={styles.modalInputLabel}>Board Name</Text>
               <TextInput
-                style={{
-                  height: 40,
-                  margin: 0,
-                  borderWidth: 0.5,
-                  marginTop: 10,
-                  padding: 5,
-                }}
+                style={styles.modalInputBox}
                 value={this.state.tempBoardName}
                 placeholder={this.props.connectedDevice?.name}
                 onChangeText={tempBoardName => {
@@ -84,17 +68,9 @@ class BoardHeader extends Component<Props, State> {
                 }}
               />
 
-              <Text style={{fontSize: 20, paddingTop: 10}}>
-                Wheel Size (in.)
-              </Text>
+              <Text style={styles.modalInputLabel}>Wheel Size (in.)</Text>
               <TextInput
-                style={{
-                  height: 40,
-                  margin: 0,
-                  borderWidth: 1,
-                  marginTop: 10,
-                  padding: 5,
-                }}
+                style={styles.modalInputBox}
                 value={this.state.tempWheelSize}
                 inputMode="decimal"
                 keyboardType="decimal-pad"
@@ -126,11 +102,8 @@ class BoardHeader extends Component<Props, State> {
             </View>
           </SafeAreaView>
         </Modal>
-        <View
-          style={{
-            flexDirection: 'row',
-          }}>
-          <View style={{top: -20, marginLeft: '-25%'}}>
+        <View style={styles.flexRow}>
+          <View style={styles.editIcon}>
             <Button
               title="✏️"
               onPress={() => this.setState({editting: true})}
@@ -142,13 +115,8 @@ class BoardHeader extends Component<Props, State> {
               this.props.connectedDevice?.id}
           </Text>
         </View>
-        <View style={{...styles.switchContainer}}>
-          <Text
-            style={{
-              ...styles.switchLabel,
-            }}>
-            Autoconnect
-          </Text>
+        <View style={styles.switchContainer}>
+          <Text style={styles.switchLabel}>Autoconnect</Text>
           <Switch
             onValueChange={autoconnect => {
               this.setState({autoconnect}, () => {
@@ -163,25 +131,48 @@ class BoardHeader extends Component<Props, State> {
   }
 }
 
-const styles = {
+const styles = StyleSheet.create({
   boardName: {
-    fontSize: 36,
-    marginTop: -25,
+    fontSize: Typography.fontsize.large,
     marginLeft: 'auto',
     marginRight: 'auto',
+    marginTop: -25,
   },
-  switchContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  switchLabel: {
-    fontSize: 20,
-    paddingRight: 10,
-  },
+  editIcon: {top: -20, marginLeft: '-25%'},
   flexRow: {
     flexDirection: 'row',
   },
-};
+  modalContainer: {
+    alignItems: 'center',
+    backgroundColor: Typography.colors.emerald,
+    flexDirection: 'column',
+    height: '100%',
+  },
+  modalInput: {
+    backgroundColor: Typography.colors.white,
+    fontSize: Typography.fontsize.medium,
+    marginHorizontal: 0,
+    padding: 30,
+    width: '100%',
+  },
+  modalInputLabel: {
+    fontSize: Typography.fontsize.medium,
+    paddingTop: 10,
+  },
+  modalInputBox: {
+    borderWidth: 0.5,
+    height: 40,
+    padding: 5,
+  },
+  switchContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  switchLabel: {
+    fontSize: Typography.fontsize.medium,
+    paddingRight: 10,
+  },
+});
 
 export default BoardHeader;

@@ -25,6 +25,7 @@ import Telemetry from './Telemetry';
 
 import BleManager, {PeripheralInfo} from 'react-native-ble-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {Typography} from './Typography';
 const BleManagerModule = NativeModules.BleManager;
 const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
@@ -55,7 +56,7 @@ class App extends Component<{}, State> {
     boardsaved: false,
   };
 
-  private debug = false;
+  private debug = true;
 
   // Seconds to scan for a valid device.
   private readonly scanDuration = 1;
@@ -196,7 +197,7 @@ class App extends Component<{}, State> {
         />
         <View style={this.state.backgroundStyle}>
           <Text style={styles.header}>
-            <Text style={styles.green}>ow</Text>.rn
+            <Text style={{color: Typography.colors.emerald}}>ow</Text>.rn
           </Text>
           <View>
             {this.state.isConnected || this.debug === true ? (
@@ -278,19 +279,14 @@ class App extends Component<{}, State> {
 
 const styles = StyleSheet.create({
   base: {
-    fontFamily:
-      '-apple-system, ".SFNSText-Regular", "San Francisco", "Roboto", "Segoe UI", "Helvetica Neue", "Lucida Grande", sans-serif',
+    fontFamily: Typography.nativeFonts,
   },
   fullscreen: {
     marginTop: '10%',
     height: '100%',
     alignItems: 'center',
   },
-  large: {fontSize: 36},
-  larger: {fontSize: 42},
-  largest: {fontSize: 64},
-  green: {color: '#56bf81'},
-  header: {fontSize: 42, textAlign: 'center'},
+  header: {fontSize: Typography.fontsize.xl, textAlign: 'center'},
 });
 
 export default App;
