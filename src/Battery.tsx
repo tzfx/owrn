@@ -122,7 +122,7 @@ class Battery extends Component<Props, State> {
     // Render mode selection based on OW generation.
     return (
       <View>
-        <Text style={{marginLeft: 40, top: 65}}>
+        <Text style={styles.tempLabel}>
           {this.CtoF(this.state.temperature)}&deg;F
           {this.state.temperature < 3 ? '🥶' : ''}
         </Text>
@@ -187,6 +187,7 @@ const styles = {
     top: 175,
     left: 5,
   },
+  tempLabel: {marginLeft: 40, top: 65},
 };
 
 export default Battery;

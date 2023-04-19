@@ -1,11 +1,12 @@
 import React, {Component} from 'react';
 
 import {Buffer} from '@craftzdog/react-native-buffer';
-import {Text, View} from 'react-native';
+import {StyleSheet, Text, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {VictoryPie} from 'victory-native';
 import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
 import {SavedBoard, StorageService} from './StorageService';
+import {Typography} from './Typography';
 
 interface Props {
   board?: SavedBoard;
@@ -261,26 +262,14 @@ class Telemetry extends Component<Props, State> {
             {x: 'speed', y: this.state.speed || 0.1},
           ]}
         />
+        <Text style={styles.speedLabel}>{this.state.speed.toFixed(1)}</Text>
         <Text
-          style={{
-            ...styles.speedLabel,
-          }}>
-          {this.state.speed.toFixed(1)}
-        </Text>
-        <Text
-          style={{
-            ...styles.speedLabel,
-            fontSize: 20,
-          }}>
+          style={StyleSheet.compose(styles.speedLabel, {
+            fontSize: Typography.fontsize.medium,
+          })}>
           mph
         </Text>
-        <Text
-          style={{
-            textAlign: 'right',
-            marginRight: 40,
-            marginTop: -75,
-            top: -10,
-          }}>
+        <Text style={styles.odometerLabel}>
           ({this.state.tro?.toFixed(2)}) {this.state.lo} mi
         </Text>
         {!this.props.debug ?? (
@@ -305,13 +294,19 @@ class Telemetry extends Component<Props, State> {
   }
 }
 
-const styles = {
+const styles = StyleSheet.create({
   speedLabel: {
     fontSize: 36,
     marginLeft: 'auto',
     marginRight: 'auto',
     top: -175,
   },
-};
+  odometerLabel: {
+    textAlign: 'right',
+    marginRight: 40,
+    marginTop: -75,
+    top: -10,
+  },
+});
 
 export default Telemetry;
