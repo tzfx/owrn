@@ -65,9 +65,13 @@ const StorageService: IStorageService = {
     );
   },
   updateAppConfig: (update: Partial<AppConfig>) => {
-    return StorageService.getAppConfig().then(
-      config => ({...config, ...update} as AppConfig),
-    );
+    return StorageService.getAppConfig()
+      .then(config => ({...config, ...update} as AppConfig))
+      .then(config =>
+        AsyncStorage.setItem(PREFIX_APP_CONFIG, JSON.stringify(config)).then(
+          () => config,
+        ),
+      );
   },
   getSavedBoards: () => {
     return AsyncStorage.getAllKeys()
@@ -84,23 +88,26 @@ const StorageService: IStorageService = {
     });
   },
   saveBoard: function (board: SavedBoard): Promise<void> {
-    StorageService.getAppConfig().then(({autoconnect}) => {
-      const found = autoconnect.includes(board.id);
-      // Add
-      if (board.autoconnect && !found) {
-        autoconnect.unshift(board.id);
-      } else {
-        // Remove.
-        if (found) {
-          autoconnect = autoconnect.filter(id => id !== board.id);
+    return StorageService.getAppConfig()
+      .then(({autoconnect}) => {
+        const found = autoconnect.includes(board.id);
+        let update: string[] = [];
+        // Add
+        if (board.autoconnect && !found) {
+          update = [board.id, ...autoconnect];
         }
-      }
-      return StorageService.updateAppConfig({autoconnect});
-    });
-    return AsyncStorage.setItem(
-      PREFIX_SAVEDBOARDS + board.id,
-      JSON.stringify(board),
-    );
+        // Remove.
+        if (!board.autoconnect && found) {
+          update = autoconnect.filter(id => id !== board.id);
+        }
+        return StorageService.updateAppConfig({autoconnect: update});
+      })
+      .then(() =>
+        AsyncStorage.setItem(
+          PREFIX_SAVEDBOARDS + board.id,
+          JSON.stringify(board),
+        ),
+      );
   },
   removeBoard: function (id: string): Promise<void> {
     return AsyncStorage.removeItem(PREFIX_SAVEDBOARDS + id);
