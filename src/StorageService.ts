@@ -25,11 +25,15 @@ export type AppConfig = {
   temperatureUnit: 'F' | 'C' | 'K';
   // Speed Unit
   speedUnit: 'MPH' | 'KPH';
+  // Theme setting-- light/dark/defer to system.
+  theme: 'light' | 'dark' | 'system';
 };
 
 export interface IStorageService {
+  // Configuration
   getAppConfig: () => Promise<AppConfig>;
   updateAppConfig: (update: Partial<AppConfig>) => Promise<AppConfig>;
+  // Board Storage
   getSavedBoards: () => Promise<SavedBoard[]>;
   getBoard: (id: string) => Promise<SavedBoard>;
   saveBoard: (board: SavedBoard) => Promise<void>;
@@ -56,6 +60,7 @@ const StorageService: IStorageService = {
             autoconnect: [],
             temperatureUnit: 'F',
             speedUnit: 'MPH',
+            theme: 'system',
           } as AppConfig),
     );
   },
@@ -79,6 +84,19 @@ const StorageService: IStorageService = {
     });
   },
   saveBoard: function (board: SavedBoard): Promise<void> {
+    StorageService.getAppConfig().then(({autoconnect}) => {
+      const found = autoconnect.includes(board.id);
+      // Add
+      if (board.autoconnect && !found) {
+        autoconnect.unshift(board.id);
+      } else {
+        // Remove.
+        if (found) {
+          autoconnect = autoconnect.filter(id => id !== board.id);
+        }
+      }
+      return StorageService.updateAppConfig({autoconnect});
+    });
     return AsyncStorage.setItem(
       PREFIX_SAVEDBOARDS + board.id,
       JSON.stringify(board),
