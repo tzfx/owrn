@@ -1,9 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const prefix = 'owrn-app';
-const prefix_savedboards = prefix + '-savedboard#';
+const PREFIX = 'owrn-app';
+const PREFIX_APP_CONFIG = PREFIX + '-appconfig';
+const PREFIX_SAVEDBOARDS = PREFIX + '-savedboard#';
 
-export const wheelSizes = {
+export const WHEEL_SIZES = {
   'Stock XR+ (11.5)': 11.5,
   'TFL/Burris/Hoosier (11)': 11,
   'Stock Pint (10.5)': 10.5,
@@ -17,7 +18,18 @@ export type SavedBoard = {
   topSpeed?: number;
 };
 
+export type AppConfig = {
+  // A prioritied list of ids to attempt autoconnection.
+  autoconnect: string[];
+  // Temperature Unit
+  temperatureUnit: 'F' | 'C' | 'K';
+  // Speed Unit
+  speedUnit: 'MPH' | 'KPH';
+};
+
 export interface IStorageService {
+  getAppConfig: () => Promise<AppConfig>;
+  updateAppConfig: (update: Partial<AppConfig>) => Promise<AppConfig>;
   getSavedBoards: () => Promise<SavedBoard[]>;
   getBoard: (id: string) => Promise<SavedBoard>;
   saveBoard: (board: SavedBoard) => Promise<void>;
@@ -36,14 +48,30 @@ const reviveBoard: (dry: string) => SavedBoard = dry => {
 };
 
 const StorageService: IStorageService = {
+  getAppConfig: () => {
+    return AsyncStorage.getItem(PREFIX_APP_CONFIG).then(config =>
+      config != null
+        ? JSON.parse(config)
+        : ({
+            autoconnect: [],
+            temperatureUnit: 'F',
+            speedUnit: 'MPH',
+          } as AppConfig),
+    );
+  },
+  updateAppConfig: (update: Partial<AppConfig>) => {
+    return StorageService.getAppConfig().then(
+      config => ({...config, ...update} as AppConfig),
+    );
+  },
   getSavedBoards: () => {
     return AsyncStorage.getAllKeys()
-      .then(keys => keys.filter(k => k.startsWith(prefix_savedboards)))
+      .then(keys => keys.filter(k => k.startsWith(PREFIX_SAVEDBOARDS)))
       .then(keys => AsyncStorage.multiGet(keys))
       .then(boards => boards.map(([_, v]) => reviveBoard(v as string)));
   },
   getBoard: function (id: string): Promise<SavedBoard> {
-    return AsyncStorage.getItem(prefix_savedboards + id).then(v => {
+    return AsyncStorage.getItem(PREFIX_SAVEDBOARDS + id).then(v => {
       if (v == null) {
         throw new Error(`Unable to retrieve board ${id}`);
       }
@@ -52,12 +80,12 @@ const StorageService: IStorageService = {
   },
   saveBoard: function (board: SavedBoard): Promise<void> {
     return AsyncStorage.setItem(
-      prefix_savedboards + board.id,
+      PREFIX_SAVEDBOARDS + board.id,
       JSON.stringify(board),
     );
   },
   removeBoard: function (id: string): Promise<void> {
-    return AsyncStorage.removeItem(prefix_savedboards + id);
+    return AsyncStorage.removeItem(PREFIX_SAVEDBOARDS + id);
   },
 };
 
