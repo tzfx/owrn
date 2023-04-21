@@ -14,7 +14,7 @@ import {
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 
 import {ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
-import {StorageService, SavedBoard} from './StorageService';
+import {StorageService, SavedBoard, AppConfig} from './StorageService';
 
 import Battery from './Battery';
 import BoardHeader from './BoardHeader';
@@ -26,10 +26,12 @@ import Telemetry from './Telemetry';
 import BleManager, {PeripheralInfo} from 'react-native-ble-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Typography} from './Typography';
+import ConfigEditor from './ConfigEditor';
 const BleManagerModule = NativeModules.BleManager;
 const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 interface State {
+  config?: AppConfig;
   connectedDevice?: PeripheralInfo;
   connectionState: ConnectionState;
   devices: any[];
@@ -134,6 +136,8 @@ class App extends Component<{}, State> {
   }
 
   async componentDidMount(): Promise<void> {
+    const config = await StorageService.getAppConfig();
+    this.setState({config});
     // IIFE hack so hooks work...
     (async () => {
       const isDarkMode = useColorScheme() === 'dark';
@@ -196,9 +200,33 @@ class App extends Component<{}, State> {
           backgroundColor={this.state.backgroundStyle.backgroundColor}
         />
         <View style={this.state.backgroundStyle}>
-          <Text style={styles.header}>
-            <Text style={{color: Typography.colors.emerald}}>ow</Text>.rn
-          </Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              paddingTop: 20,
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}>
+            <ConfigEditor
+              style={{flex: 1, paddingLeft: 20}}
+              handleConfigUpdate={config => {
+                StorageService.updateAppConfig(config).then(updated =>
+                  this.setState({config: updated}),
+                );
+              }}
+              config={this.state.config!}
+            />
+            <Text style={{flex: 2, left: -15}}>
+              <Text
+                style={{
+                  color: Typography.colors.emerald,
+                  fontSize: Typography.fontsize.xxl,
+                }}>
+                ow
+              </Text>
+              <Text style={{fontSize: Typography.fontsize.xxl}}>.rn</Text>
+            </Text>
+          </View>
           <View>
             {this.state.isConnected || this.debug === true ? (
               <View
@@ -286,7 +314,7 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
   },
-  header: {fontSize: Typography.fontsize.xl, textAlign: 'center'},
+  header: {fontSize: Typography.fontsize.xl, width: '100%'},
 });
 
 export default App;
