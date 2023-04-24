@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   Button,
   Modal,
@@ -19,6 +19,11 @@ type Props = {
 
 const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
   const [editting, setEditting] = useState(false);
+  const [tempConfig, setTempConfig] = useState(config);
+
+  useEffect(() => {
+    setTempConfig(config);
+  }, [config]);
 
   return (
     <View style={style}>
@@ -28,17 +33,26 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
       <Modal
         animationType="slide"
         visible={editting}
-        onDismiss={() => setEditting(false)}>
-        <SafeAreaView>
+        onDismiss={() => {
+          setEditting(false);
+          handleConfigUpdate(tempConfig);
+        }}>
+        <SafeAreaView style={{top: 60, marginHorizontal: 30}}>
+          <Text style={styles.h1}>User Options</Text>
           <View style={styles.optionRow}>
             <Text style={styles.optionLabel}>Speed Unit</Text>
-            {['MPH', 'KPH'].map(unit => (
-              <Pressable key={unit} style={{padding: 10}}>
+            {['KPH', 'MPH'].map(unit => (
+              <Pressable
+                key={unit}
+                style={styles.optionValue}
+                onPress={() => {
+                  setTempConfig({...tempConfig, speedUnit: unit as any});
+                }}>
                 <Text
                   style={
-                    config?.speedUnit === unit
-                      ? {textDecorationLine: 'underline'}
-                      : {}
+                    tempConfig?.speedUnit === unit
+                      ? {...styles.selected}
+                      : {...styles.deselected}
                   }>
                   {unit}
                 </Text>
@@ -47,17 +61,41 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
           </View>
           <View style={styles.optionRow}>
             <Text style={styles.optionLabel}>Temperature Unit</Text>
-            {['F', 'C', 'K'].map(unit => (
-              <Pressable key={unit}>
-                <Text>{unit}</Text>
+            {['C', 'F', 'K'].map(unit => (
+              <Pressable
+                key={unit}
+                onPress={() => {
+                  setTempConfig({...tempConfig, temperatureUnit: unit as any});
+                }}
+                style={styles.optionValue}>
+                <Text
+                  style={
+                    tempConfig?.temperatureUnit === unit
+                      ? {...styles.selected}
+                      : {...styles.deselected}
+                  }>
+                  {unit}
+                </Text>
               </Pressable>
             ))}
           </View>
           <View style={styles.optionRow}>
             <Text style={styles.optionLabel}>Theme</Text>
             {['light', 'dark', 'system'].map(theme => (
-              <Pressable key={theme}>
-                <Text>{theme}</Text>
+              <Pressable
+                key={theme}
+                onPress={() => {
+                  setTempConfig({...tempConfig, theme: theme as any});
+                }}
+                style={styles.optionValue}>
+                <Text
+                  style={
+                    tempConfig?.theme === theme
+                      ? {...styles.selected}
+                      : {...styles.deselected}
+                  }>
+                  {theme}
+                </Text>
               </Pressable>
             ))}
           </View>
@@ -69,7 +107,11 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
               </Pressable>
             ))}
           </View>
-          <Button title="Close" onPress={() => setEditting(false)} />
+          <Button
+            color={Typography.colors.emerald}
+            title="Close"
+            onPress={() => setEditting(false)}
+          />
         </SafeAreaView>
       </Modal>
     </View>
@@ -77,8 +119,27 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
 };
 
 const styles = StyleSheet.create({
-  optionRow: {flexDirection: 'row', alignItems: 'center'},
-  optionLabel: {padding: 10},
+  h1: {
+    fontSize: Typography.fontsize.medium,
+    paddingBottom: 20,
+    fontWeight: '600',
+  },
+  selected: {
+    backgroundColor: Typography.colors.emerald,
+    color: Typography.colors.white,
+    // textDecorationLine: 'underline',
+    paddingHorizontal: 10,
+    paddingVertical: 2.5,
+  },
+  deselected: {
+    paddingHorizontal: 10,
+    paddingVertical: 2.5,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  optionLabel: {padding: 10, marginRight: 'auto'},
   optionValue: {padding: 10},
 });
 

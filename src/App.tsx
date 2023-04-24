@@ -24,7 +24,7 @@ import ModeSelection from './ModeSelection';
 import Telemetry from './Telemetry';
 
 import BleManager, {PeripheralInfo} from 'react-native-ble-manager';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import {Typography} from './Typography';
 import ConfigEditor from './ConfigEditor';
 const BleManagerModule = NativeModules.BleManager;
@@ -148,9 +148,9 @@ class App extends Component<{}, State> {
       this.setState({backgroundStyle, isDarkMode});
     })().catch(() => {}); // NOOP.
 
-    if (this.debug) {
-      await AsyncStorage.clear();
-    }
+    // if (this.debug) {
+    //   await AsyncStorage.clear();
+    // }
 
     // Initialize Bluetooth Manager
     try {
@@ -210,9 +210,9 @@ class App extends Component<{}, State> {
             <ConfigEditor
               style={{flex: 1, paddingLeft: 20}}
               handleConfigUpdate={config => {
-                StorageService.updateAppConfig(config).then(updated =>
-                  this.setState({config: updated}),
-                );
+                StorageService.updateAppConfig(config).then(updated => {
+                  this.setState({config: updated});
+                });
               }}
               config={this.state.config!}
             />
@@ -257,6 +257,7 @@ class App extends Component<{}, State> {
                   status={this.state.connectionState}
                 />
                 <Button
+                  color={Typography.colors.emerald}
                   title={
                     this.state.connectionState === ConnectionState.DISCONNECTED
                       ? 'Start Scanning'
