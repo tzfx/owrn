@@ -1,4 +1,10 @@
-import React, {Component} from 'react';
+import * as React from 'react';
+
+import {PeripheralInfo} from 'react-native-ble-manager';
+
+import {SavedBoard, StorageService} from './StorageService';
+import {useState} from 'react';
+import {Typography} from './Typography';
 import {
   Button,
   Modal,
@@ -9,10 +15,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import {PeripheralInfo} from 'react-native-ble-manager';
-
-import {SavedBoard, StorageService} from './StorageService';
-import {Typography} from './Typography';
 
 type Props = {
   connectedDevice?: PeripheralInfo;
@@ -20,116 +22,86 @@ type Props = {
   handleSave: () => {};
 };
 
-type State = {
-  autoconnect: boolean;
-  editting: boolean;
-  boardName?: string;
-  tempBoardName?: string;
-  tempWheelSize?: string;
-};
+const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
+  const [autoconnect, setAutoconnect] = useState(board?.autoconnect ?? false);
+  const [editting, setEditting] = useState(false);
+  const [formBoardname, setFormBoardname] = useState(board?.name);
+  const [formWheelsize, setFormWheelsize] = useState(board?.wheelSize);
 
-class BoardHeader extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = {
-      autoconnect: props.board?.autoconnect ?? false,
-      editting: false,
-      boardName: props.board?.name,
-      tempBoardName: props.board?.name,
-      tempWheelSize: props.board?.wheelSize.toString(),
-    };
-  }
-  private async saveConnection(id: string) {
+  async function saveBoard(id: string) {
     await StorageService.saveBoard({
       id,
-      name: this.state.tempBoardName ?? id,
-      autoconnect: this.state.autoconnect,
-      wheelSize: +(this.state.tempWheelSize ?? 10.5),
+      name: formBoardname ?? id,
+      autoconnect,
+      wheelSize: +(formWheelsize ?? 10.5),
     });
-    return this.props.handleSave();
+    return handleSave();
   }
 
-  private async deleteConnection(id: string) {
-    return await StorageService.removeBoard(id);
-  }
-  render() {
-    return (
-      <View>
-        <Modal visible={this.state.editting}>
-          <SafeAreaView style={styles.modalContainer}>
-            <View style={styles.modalInput}>
-              <Text style={styles.modalInputLabel}>Board Name</Text>
-              <TextInput
-                style={styles.modalInputBox}
-                value={this.state.tempBoardName}
-                placeholder={this.props.connectedDevice?.name}
-                onChangeText={tempBoardName => {
-                  this.setState({tempBoardName});
-                }}
-              />
-
-              <Text style={styles.modalInputLabel}>Wheel Size (in.)</Text>
-              <TextInput
-                style={styles.modalInputBox}
-                value={this.state.tempWheelSize}
-                inputMode="decimal"
-                keyboardType="decimal-pad"
-                onChangeText={tempWheelSize => {
-                  this.setState({tempWheelSize});
-                }}
-              />
-              <View style={{...styles.flexRow}}>
-                <Button
-                  color={'grey'}
-                  title="Cancel"
-                  onPress={() => this.setState({editting: false})}
-                />
-                <Button
-                  title="Save"
-                  onPress={() => {
-                    if (this.props.connectedDevice) {
-                      this.saveConnection(
-                        this.props.connectedDevice.id,
-                      ).finally(() =>
-                        this.setState({
-                          editting: false,
-                        }),
-                      );
-                    }
-                  }}
-                />
-              </View>
-            </View>
-          </SafeAreaView>
-        </Modal>
-        <View style={styles.flexRow}>
-          <View style={styles.editIcon}>
-            <Button
-              title="✏️"
-              onPress={() => this.setState({editting: true})}
+  return (
+    <View>
+      <Modal animationType="slide" visible={editting}>
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalInput}>
+            <Text style={styles.modalInputLabel}>Board Name</Text>
+            <TextInput
+              style={styles.modalInputBox}
+              value={formBoardname}
+              placeholder={connectedDevice?.name}
+              onChangeText={value => setFormBoardname(value)}
             />
+
+            <Text style={styles.modalInputLabel}>Wheel Size (in.)</Text>
+            <TextInput
+              style={styles.modalInputBox}
+              value={'' + formWheelsize}
+              inputMode="decimal"
+              keyboardType="decimal-pad"
+              onChangeText={value => setFormWheelsize(+value)}
+            />
+            <View style={styles.flexRow}>
+              <Button
+                color={'grey'}
+                title="Cancel"
+                onPress={() => setEditting(false)}
+              />
+              <Button
+                title="Save"
+                onPress={() => {
+                  if (connectedDevice) {
+                    saveBoard(connectedDevice.id).finally(() =>
+                      setEditting(false),
+                    );
+                  }
+                }}
+              />
+            </View>
           </View>
-          <Text style={{...styles.boardName}}>
-            {this.props.board?.name ??
-              this.props.connectedDevice?.name ??
-              this.props.connectedDevice?.id}
-          </Text>
+        </SafeAreaView>
+      </Modal>
+      <View style={styles.flexRow}>
+        <View style={styles.editIcon}>
+          <Button title="✏️" onPress={() => setEditting(true)} />
         </View>
-        <View style={styles.switchContainer}>
-          <Text style={styles.switchLabel}>Autoconnect</Text>
-          <Switch
-            onValueChange={autoconnect => {
-              this.setState({autoconnect}, () => {
-                this.saveConnection(this.props.connectedDevice!.id);
-              });
-            }}
-            value={this.state.autoconnect}
-          />
-        </View>
+        <Text style={styles.boardName}>
+          {board?.name ?? connectedDevice?.name ?? connectedDevice?.id}
+        </Text>
       </View>
-    );
-  }
-}
+      <View style={styles.switchContainer}>
+        <Text style={styles.switchLabel}>Autoconnect</Text>
+        <Switch
+          onValueChange={value => {
+            setAutoconnect(value);
+            saveBoard(connectedDevice!.id);
+          }}
+          value={autoconnect}
+        />
+      </View>
+    </View>
+  );
+};
+
+export default BoardHeader;
 
 const styles = StyleSheet.create({
   boardName: {
@@ -174,5 +146,3 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
 });
-
-export default BoardHeader;
