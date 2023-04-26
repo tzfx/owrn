@@ -34,10 +34,10 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
         animationType="slide"
         visible={editting}
         onDismiss={() => {
-          setEditting(false);
           handleConfigUpdate(tempConfig);
+          setEditting(false);
         }}>
-        <SafeAreaView style={{top: 60, marginHorizontal: 30}}>
+        <SafeAreaView style={styles.boxed}>
           <Text style={styles.h1}>User Options</Text>
           <View style={styles.optionRow}>
             <Text style={styles.optionLabel}>Speed Unit</Text>
@@ -119,6 +119,7 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
 };
 
 const styles = StyleSheet.create({
+  boxed: {top: 60, marginHorizontal: 30},
   h1: {
     fontSize: Typography.fontsize.medium,
     paddingBottom: 20,
