@@ -5,6 +5,7 @@ import {
   Pressable,
   SafeAreaView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from 'react-native';
@@ -99,6 +100,15 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
               </Pressable>
             ))}
           </View>
+          <View style={styles.optionRow}>
+            <Text style={styles.optionLabel}>Debug</Text>
+            <Switch
+              value={tempConfig?.debug}
+              onChange={() => {
+                setTempConfig({...tempConfig, debug: !tempConfig.debug});
+              }}
+            />
+          </View>
           <View>
             <Text style={styles.optionLabel}>Saved Boards</Text>
             {[].map(board => (
@@ -128,7 +138,6 @@ const styles = StyleSheet.create({
   selected: {
     backgroundColor: Typography.colors.emerald,
     color: Typography.colors.white,
-    // textDecorationLine: 'underline',
     paddingHorizontal: 10,
     paddingVertical: 2.5,
   },

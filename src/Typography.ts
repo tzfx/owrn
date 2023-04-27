@@ -18,6 +18,7 @@ const Typography = {
     xl: 48,
     xxl: 64,
   },
+  emptyFlex: {flex: 1},
 };
 
 export {Typography};

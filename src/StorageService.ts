@@ -27,6 +27,7 @@ export type AppConfig = {
   speedUnit: 'MPH' | 'KPH';
   // Theme setting-- light/dark/defer to system.
   theme: 'light' | 'dark' | 'system';
+  debug: boolean;
 };
 
 export interface IStorageService {
@@ -61,6 +62,7 @@ const StorageService: IStorageService = {
             temperatureUnit: 'F',
             speedUnit: 'MPH',
             theme: 'system',
+            debug: false,
           } as AppConfig),
     );
   },

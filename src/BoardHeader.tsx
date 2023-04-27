@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   switchLabel: {
-    fontSize: Typography.fontsize.medium,
+    fontSize: Typography.fontsize.small,
     paddingRight: 10,
   },
 });

@@ -5,10 +5,12 @@ import {Text, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {VictoryBoxPlot, VictoryPie} from 'victory-native';
 import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
+import {AppConfig} from './StorageService';
 
 interface Props {
   device?: PeripheralInfo;
   debug?: boolean;
+  config?: AppConfig;
 }
 
 interface State {
@@ -32,7 +34,7 @@ class Battery extends Component<Props, State> {
   }
 
   private CtoF(temperature: number) {
-    return +(temperature * (9 / 5) + 32).toFixed(1);
+    return temperature * (9 / 5) + 32;
   }
 
   private colorScale(value: number, max: number = 100): string {
@@ -108,8 +110,15 @@ class Battery extends Component<Props, State> {
   }
 
   async componentDidMount(): Promise<void> {
-    await this.refreshBatteryStats().catch(err => console.error(err));
-    this.#batteryPoller = setInterval(() => this.refreshBatteryStats(), 30_000);
+    await this.refreshBatteryStats()
+      .then(
+        () =>
+          (this.#batteryPoller = setInterval(
+            () => this.refreshBatteryStats(),
+            30_000,
+          )),
+      )
+      .catch(err => console.error(err));
   }
 
   componentWillUnmount(): void {
@@ -121,9 +130,16 @@ class Battery extends Component<Props, State> {
   render(): JSX.Element {
     // Render mode selection based on OW generation.
     return (
-      <View>
+      <View style={{marginTop: -40}}>
         <Text style={styles.tempLabel}>
-          {this.CtoF(this.state.temperature)}&deg;F
+          {(this.props.config?.temperatureUnit === 'F'
+            ? this.CtoF(this.state.temperature)
+            : this.props.config?.temperatureUnit === 'K'
+            ? this.state.temperature + 273.15
+            : this.state.temperature
+          ).toFixed(1)}
+          {this.props.config?.temperatureUnit !== 'K' ? '°' : ''}
+          {this.props.config?.temperatureUnit}
           {this.state.temperature < 3 ? '🥶' : ''}
         </Text>
         <Text style={{...styles.chartPercentLabel}}>{this.state.percent}%</Text>
@@ -149,10 +165,10 @@ class Battery extends Component<Props, State> {
           height={50}
           style={{
             parent: {
-              marginTop: -160,
+              marginTop: -175,
             },
           }}
-          medianLabels={() => this.state.voltage?.toFixed(1) + 'v'}
+          medianLabels={() => this.state.voltage?.toFixed(1) + 'V'}
           data={[
             {
               x: '',

@@ -5,13 +5,14 @@ import {StyleSheet, Text, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {VictoryPie} from 'victory-native';
 import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
-import {SavedBoard, StorageService} from './StorageService';
+import {AppConfig, SavedBoard, StorageService} from './StorageService';
 import {Typography} from './Typography';
 
 interface Props {
   board?: SavedBoard;
   device?: PeripheralInfo;
   debug?: boolean;
+  config?: AppConfig;
 }
 
 interface State {
@@ -209,13 +210,26 @@ class Telemetry extends Component<Props, State> {
 
   async componentDidMount(): Promise<void> {
     if (this.props.debug) {
-      await this.refreshTelemetry().catch(err => console.error(err));
-      this.#telemetryPoller = setInterval(() => this.refreshTelemetry(), 5_000);
+      await this.refreshTelemetry()
+        .then(() => {
+          this.#telemetryPoller = setInterval(
+            () => this.refreshTelemetry(),
+            5_000,
+          );
+        })
+        .catch(err => console.error(err));
     } else {
-      await this.refreshOdometers().catch(err => console.error(err));
-      this.#odoPoller = setInterval(() => this.refreshOdometers(), 30_000);
-      await this.refreshRPM().catch(err => console.error(err));
-      this.#rpmPoller = setInterval(() => this.refreshRPM(), 750);
+      await this.refreshOdometers()
+        .then(() => {
+          this.#odoPoller = setInterval(() => this.refreshOdometers(), 30_000);
+        })
+        .catch(err => console.error(err));
+
+      await this.refreshRPM()
+        .then(() => {
+          this.#rpmPoller = setInterval(() => this.refreshRPM(), 750);
+        })
+        .catch(err => console.error(err));
     }
   }
 
@@ -230,7 +244,7 @@ class Telemetry extends Component<Props, State> {
 
   render(): JSX.Element {
     return (
-      <View>
+      <View style={{marginTop: -15}}>
         <VictoryPie
           animate={{duration: 100}}
           height={350}
@@ -304,7 +318,7 @@ const styles = StyleSheet.create({
   odometerLabel: {
     textAlign: 'right',
     marginRight: 40,
-    marginTop: -75,
+    marginTop: -90,
     top: -10,
   },
 });
