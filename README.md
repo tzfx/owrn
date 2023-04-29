@@ -84,11 +84,10 @@ $ pod install
 ```
 
 ## Xcode: ##
-### Install on iPhone: ###
+### :iphone: Install on iPhone: ###
 Plug in iphone and select your phone as the target in xcode.
 In the product menu select "Build For Running"
-Now enable Developer mode on your iPhone using the following guide: https://help.testapp.io/faq/enable-developer-mode-ios/
-
+Now enable Developer mode on your iPhone using the following guide: <a href=https://help.testapp.io/faq/enable-developer-mode-ios/>Enable Developer Mode</a>
 <br>
 
 ## Made with :heart: by <a href="https://github.com/tzfx" target="_blank">A. Stadler</a> ##
