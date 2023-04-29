@@ -64,7 +64,7 @@ The following tools were used in this project:
 - [React Native](https://reactnative.dev/)
 - [TypeScript](https://www.typescriptlang.org/) -->
 
-## :checkered_flag: Starting ##
+## :checkered_flag: Getting Started ##
 
 ```bash
 # Download Xcode
@@ -81,17 +81,16 @@ $ npm install
 # Run the project
 $ cd ios (or) cd android
 $ pod install
-
-# Xcode
 ```
 
-<!-- ## :memo: License ##
+## Xcode: ##
+### Install on iPhone: ###
+Plug in iphone and select your phone as the target in xcode.
+In the product menu select "Build For Running"
+Now enable Developer mode on your iPhone using the following guide: https://help.testapp.io/faq/enable-developer-mode-ios/
 
-This project is under license from MIT. For more details, see the [LICENSE](LICENSE.md) file. -->
+<br>
 
-
-Made with :heart: by <a href="https://github.com/tzfx" target="_blank">A. Stadler</a>
-
-&#xa0;
+## Made with :heart: by <a href="https://github.com/tzfx" target="_blank">A. Stadler</a> ##
 
 <a href="#top">Back to top</a>
