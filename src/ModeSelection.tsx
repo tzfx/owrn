@@ -3,8 +3,8 @@ import React, {Component} from 'react';
 import {Buffer} from '@craftzdog/react-native-buffer';
 import {Button, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
-import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
-import {inferBoardFromHardwareRevision} from './rewheel/board';
+import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './ble';
+import {inferBoardFromHardwareRevision} from './board';
 
 type SupportedBoards = 'XR' | 'Pint';
 

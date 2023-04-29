@@ -24,7 +24,7 @@ import {AppConfig, SavedBoard, StorageService} from './StorageService';
 import Telemetry from './Telemetry';
 import {Typography} from './Typography';
 
-import {ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
+import {ONEWHEEL_SERVICE_UUID} from './ble';
 const BleManagerModule = NativeModules.BleManager;
 const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 

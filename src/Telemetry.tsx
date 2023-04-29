@@ -4,7 +4,7 @@ import {Buffer} from '@craftzdog/react-native-buffer';
 import {StyleSheet, Text, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {VictoryPie} from 'victory-native';
-import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
+import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './ble';
 import {AppConfig, SavedBoard, StorageService} from './StorageService';
 import {Typography} from './Typography';
 
