@@ -1,7 +1,7 @@
 import React from 'react';
 
 import {Text, type TextStyle} from 'react-native';
-import {getEmoji, type ConnectionState} from './ConnectionState';
+import {getEmoji, type ConnectionState} from './util/ConnectionState';
 
 interface Props {
   style?: TextStyle;

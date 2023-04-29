@@ -1,12 +1,12 @@
-import React, {Component} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 
 import {Buffer} from '@craftzdog/react-native-buffer';
 import {StyleSheet, Text, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {VictoryPie} from 'victory-native';
-import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './ble';
 import {AppConfig, SavedBoard, StorageService} from './StorageService';
 import {Typography} from './Typography';
+import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/Bluetooth';
 
 interface Props {
   board?: SavedBoard;
@@ -15,298 +15,160 @@ interface Props {
   config?: AppConfig;
 }
 
-interface State {
-  ca?: number;
-  lah?: number;
-  lo?: number;
-  p?: number;
-  r?: number;
-  rpm: number;
-  tah?: number;
-  trah?: number;
-  tro?: number;
-  y?: number;
-  topSpeed: number;
-  speed: number;
-}
+const Telemetry = ({board, device, config}: Props) => {
+  const [odometer, setOdometer] = useState(0);
+  const [rpm, setRpm] = useState(0);
+  const [tripRotations, setTripRotations] = useState(0);
 
-class Telemetry extends Component<Props, State> {
-  #odoPoller?: number;
-  #rpmPoller?: number;
+  const [metric, setMetric] = useState(false);
 
-  // full telemetry for debugging.
-  #telemetryPoller?: number;
+  const odometerPoller = useRef<number>();
+  const rpmPoller = useRef<number>();
 
-  constructor(props: Props) {
-    super(props);
-    this.state = {
-      lo: 0,
-      rpm: 0,
-      speed: 0,
-      topSpeed: props.board?.topSpeed ?? 0.0,
-      tro: 0,
-    };
+  function calculateSpeed(revs: number, diameter: number = 10.5, km = false) {
+    return ((diameter * Math.PI * revs * 60) / (12 * 5_280)) * (km ? 1.609 : 1);
+  }
+  const speed = calculateSpeed(rpm, board?.wheelSize, metric);
+
+  function rotations2Distance(
+    rotations: number,
+    diameter: number = 10.5,
+    km = false,
+  ) {
+    return ((diameter * rotations) / (12 * 5_280)) * (km ? 1.609 : 1);
   }
 
-  private calculateSpeed(rpm: number, diameter: number = 10.5) {
-    return (diameter * Math.PI * rpm * 60) / (12 * 5_280);
-  }
+  // const trip
 
-  private rotations2Distance(rotations: number, diameter: number = 10.5) {
-    return (diameter * rotations) / (12 * 5_280);
-  }
-
-  private refreshRPM() {
-    if (this.props.device != null) {
-      return BTManager.read(
-        this.props.device.id,
-        ONEWHEEL_SERVICE_UUID,
-        CHARACTERISTICS.rpm,
-      )
-        .then(rrpm => {
-          const brpm = Buffer.from(rrpm);
-          const rpm = brpm.readUInt16BE(0);
-          const speed = this.calculateSpeed(rpm, this.props.board?.wheelSize);
-          const topSpeed =
-            speed > this.state.topSpeed ? speed : this.state.topSpeed;
-          if (
-            this.props.board != null &&
-            topSpeed > (this.props.board?.topSpeed ?? 0)
-          ) {
-            StorageService.saveBoard({...this.props.board, topSpeed});
-          }
-          this.setState({rpm: brpm.readUInt16BE(0), speed, topSpeed});
-        })
-        .catch(() => {
-          if (this.#rpmPoller != null) {
-            clearInterval(this.#rpmPoller);
-          }
-        });
-    }
-    return Promise.reject('No device connected.');
-  }
-
-  private refreshOdometers() {
-    if (this.props.device != null) {
-      return Promise.all([
-        BTManager.read(
-          this.props.device.id,
-          ONEWHEEL_SERVICE_UUID,
-          CHARACTERISTICS.lifetimeOdometer,
-        ),
-        BTManager.read(
-          this.props.device.id,
-          ONEWHEEL_SERVICE_UUID,
-          CHARACTERISTICS.tripOdometer,
-        ),
-      ])
-        .then(([rlo, rto]) => {
-          const [blo, bto] = [Buffer.from(rlo), Buffer.from(rto)];
-          this.setState({
-            lo: blo.readUInt16BE(0),
-            tro: this.rotations2Distance(
-              bto.readUInt16BE(0),
-              this.props.board?.wheelSize,
-            ),
-          });
-        })
-        .catch(() => {
-          if (this.#odoPoller != null) {
-            clearInterval(this.#odoPoller);
-          }
-        });
-    }
-    return Promise.reject('No device connected.');
-  }
-
-  private refreshTelemetry() {
-    if (this.props.device != null) {
-      return Promise.all([
-        BTManager.read(
-          this.props.device.id,
-          ONEWHEEL_SERVICE_UUID,
-          CHARACTERISTICS.currentAmps,
-        ),
-        BTManager.read(
-          this.props.device.id,
-          ONEWHEEL_SERVICE_UUID,
-          CHARACTERISTICS.lifetimeAmpHours,
-        ),
-        BTManager.read(
-          this.props.device.id,
-          ONEWHEEL_SERVICE_UUID,
-          CHARACTERISTICS.lifetimeOdometer,
-        ),
-        BTManager.read(
-          this.props.device.id,
-          ONEWHEEL_SERVICE_UUID,
-          CHARACTERISTICS.pitch,
-        ),
-        BTManager.read(
-          this.props.device.id,
-          ONEWHEEL_SERVICE_UUID,
-          CHARACTERISTICS.roll,
-        ),
-        BTManager.read(
-          this.props.device.id,
+  useEffect(() => {
+    function refreshRPM() {
+      if (device?.id != null) {
+        return BTManager.read(
+          device.id,
           ONEWHEEL_SERVICE_UUID,
           CHARACTERISTICS.rpm,
-        ),
-        BTManager.read(
-          this.props.device.id,
-          ONEWHEEL_SERVICE_UUID,
-          CHARACTERISTICS.tripAmpHours,
-        ),
-        BTManager.read(
-          this.props.device.id,
-          ONEWHEEL_SERVICE_UUID,
-          CHARACTERISTICS.tripOdometer,
-        ),
-        BTManager.read(
-          this.props.device.id,
-          ONEWHEEL_SERVICE_UUID,
-          CHARACTERISTICS.tripRegenAmpHours,
-        ),
-        BTManager.read(
-          this.props.device.id,
-          ONEWHEEL_SERVICE_UUID,
-          CHARACTERISTICS.yaw,
-        ),
-      ])
-        .then(([rca, rlah, rlo, rp, rr, rrpm, rtah, rto, rtrah, ry]) => {
-          const [bca, blah, blo, bp, br, brpm, btah, bto, btrah, by] = [
-            Buffer.from(rca),
-            Buffer.from(rlah),
-            Buffer.from(rlo),
-            Buffer.from(rp),
-            Buffer.from(rr),
-            Buffer.from(rrpm),
-            Buffer.from(rtah),
-            Buffer.from(rto),
-            Buffer.from(rtrah),
-            Buffer.from(ry),
-          ];
-          this.setState({
-            ca: bca.readUInt16BE(0),
-            lah: blah.readUInt16BE(0),
-            lo: blo.readUInt16BE(0),
-            p: +(bp.readUInt16BE(0) / 100).toFixed(2),
-            r: +((br.readUInt16BE(0) - 1800) / 10).toFixed(2),
-            rpm: brpm.readUInt16BE(0),
-            tah: +(btah.readUInt16BE(0) * 0.0001).toFixed(4),
-            tro: bto.readUInt16BE(0),
-            trah: btrah.readUInt16BE(0),
-            y: +((by.readUInt16BE(0) - 2700) / 10).toFixed(2),
+        )
+          .then(rrpm => {
+            const brpm = Buffer.from(rrpm);
+            const currentRPM = brpm.readUInt16BE(0);
+            setRpm(currentRPM);
+          })
+          .catch(() => {
+            if (rpmPoller.current != null) {
+              clearInterval(rpmPoller.current);
+            }
           });
-        })
-        .catch(() => {
-          if (this.#telemetryPoller != null) {
-            clearInterval(this.#telemetryPoller);
-          }
-        });
+      }
+      return Promise.reject('No device connected. (Refresh RPM)');
     }
-    return Promise.reject('No device connected.');
-  }
-
-  async componentDidMount(): Promise<void> {
-    if (this.props.debug) {
-      await this.refreshTelemetry()
-        .then(() => {
-          this.#telemetryPoller = setInterval(
-            () => this.refreshTelemetry(),
-            5_000,
-          );
-        })
-        .catch(err => console.error(err));
-    } else {
-      await this.refreshOdometers()
-        .then(() => {
-          this.#odoPoller = setInterval(() => this.refreshOdometers(), 30_000);
-        })
-        .catch(err => console.error(err));
-
-      await this.refreshRPM()
-        .then(() => {
-          this.#rpmPoller = setInterval(() => this.refreshRPM(), 750);
-        })
-        .catch(err => console.error(err));
+    function refreshOdometers() {
+      if (device != null) {
+        return Promise.all([
+          BTManager.read(
+            device.id,
+            ONEWHEEL_SERVICE_UUID,
+            CHARACTERISTICS.lifetimeOdometer,
+          ),
+          BTManager.read(
+            device.id,
+            ONEWHEEL_SERVICE_UUID,
+            CHARACTERISTICS.tripOdometer,
+          ),
+        ])
+          .then(([rlo, rto]) => {
+            const [blo, bto] = [Buffer.from(rlo), Buffer.from(rto)];
+            setOdometer(blo.readUInt16BE(0));
+            setTripRotations(bto.readUInt16BE(0)); // calc based on rotation 2 wheelsize
+          })
+          .catch(() => {
+            if (odometerPoller.current != null) {
+              clearInterval(odometerPoller.current);
+            }
+          });
+      }
+      return Promise.reject('No device connected. (Refresh Odometers)');
     }
-  }
 
-  componentWillUnmount(): void {
-    if (this.#rpmPoller != null) {
-      clearInterval(this.#rpmPoller);
-    }
-    if (this.#telemetryPoller != null) {
-      clearInterval(this.#telemetryPoller);
-    }
-  }
+    refreshRPM()
+      .then(() => (rpmPoller.current = setInterval(() => refreshRPM(), 750)))
+      .catch(err => console.error(err));
+    refreshOdometers()
+      .then(
+        () =>
+          (odometerPoller.current = setInterval(
+            () => refreshOdometers(),
+            30_000,
+          )),
+      )
+      .catch(err => console.error(err));
+    return () => {
+      if (rpmPoller.current != null) {
+        clearInterval(rpmPoller.current);
+      }
+      if (odometerPoller.current != null) {
+        clearInterval(odometerPoller.current);
+      }
+    };
+  }, [device]);
 
-  render(): JSX.Element {
-    return (
-      <View style={{marginTop: -15}}>
-        <VictoryPie
-          animate={{duration: 100}}
-          height={350}
-          startAngle={90}
-          endAngle={270}
-          innerRadius={75}
-          labels={({datum}) =>
-            datum.x === 'top' ? this.state.topSpeed.toFixed(1) : ''
-          }
-          labelPlacement={'perpendicular'}
-          labelPosition={'startAngle'}
-          labelRadius={() => 130}
-          style={{
-            data: {
-              fill: ({datum}) =>
-                datum.x === ''
-                  ? 'lightgrey'
-                  : datum.x === 'top'
-                  ? '#b9d0df'
-                  : '#457b9d',
-            },
-            parent: {
-              marginTop: -160,
-            },
-          }}
-          data={[
-            {x: '', y: 25.0 - this.state.topSpeed},
-            {x: 'top', y: this.state.topSpeed - this.state.speed},
-            {x: 'speed', y: this.state.speed || 0.1},
-          ]}
-        />
-        <Text style={styles.speedLabel}>{this.state.speed.toFixed(1)}</Text>
-        <Text
-          style={StyleSheet.compose(styles.speedLabel, {
-            fontSize: Typography.fontsize.medium,
-          })}>
-          mph
-        </Text>
-        <Text style={styles.odometerLabel}>
-          ({this.state.tro?.toFixed(2)}) {this.state.lo} mi
-        </Text>
-        {!this.props.debug ?? (
-          <View>
-            <Text>Current:</Text>
-            <Text>Amps: {this.state.ca}</Text>
-            <Text>Pitch: {this.state.p}</Text>
-            <Text>Roll: {this.state.r}</Text>
-            <Text>Yaw: {this.state.y}</Text>
-            <Text>RPM: {this.state.rpm}</Text>
-            <Text>Trip:</Text>
-            <Text>Mileage: {this.state.tro}</Text>
-            <Text>Ah: {this.state.tah}</Text>
-            <Text>Regen Ah: {this.state.trah}</Text>
-            <Text>Lifetime:</Text>
-            <Text>Mileage: {this.state.lo}</Text>
-            <Text>Ah: {this.state.lah}</Text>
-          </View>
-        )}
-      </View>
-    );
-  }
-}
+  useEffect(() => {
+    if (board != null && speed > (board?.topSpeed ?? 0)) {
+      StorageService.saveBoard({...board, topSpeed: speed});
+    }
+  }, [board, speed]);
+
+  useEffect(() => {
+    setMetric(config?.speedUnit === 'KPH');
+  }, [config]);
+
+  return (
+    <View style={{marginTop: -15}}>
+      <VictoryPie
+        animate={{duration: 100}}
+        height={350}
+        startAngle={90}
+        endAngle={270}
+        innerRadius={75}
+        labels={({datum}) =>
+          datum.x === 'top' ? (board?.topSpeed ?? 0.0).toFixed(1) : ''
+        }
+        labelPlacement={'perpendicular'}
+        labelPosition={'startAngle'}
+        labelRadius={() => 130}
+        style={{
+          data: {
+            fill: ({datum}) =>
+              datum.x === ''
+                ? 'lightgrey'
+                : datum.x === 'top'
+                ? '#b9d0df'
+                : '#457b9d',
+          },
+          parent: {
+            marginTop: -160,
+          },
+        }}
+        data={[
+          {x: '', y: 25.0 - (board?.topSpeed ?? 0)},
+          {x: 'top', y: board?.topSpeed ?? 0 - speed},
+          {x: 'speed', y: speed || 0.1},
+        ]}
+      />
+      <Text style={styles.speedLabel}>{speed.toFixed(1)}</Text>
+      <Text
+        style={StyleSheet.compose(styles.speedLabel, {
+          fontSize: Typography.fontsize.medium,
+        })}>
+        {config?.speedUnit.toLowerCase()}
+      </Text>
+      <Text style={styles.odometerLabel}>
+        (
+        {rotations2Distance(tripRotations, board?.wheelSize, metric).toFixed(2)}
+        ) {odometer} {config?.speedUnit === 'KPH' ? 'km' : 'mi'}
+      </Text>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   speedLabel: {

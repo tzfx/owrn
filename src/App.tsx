@@ -17,14 +17,14 @@ import BleManager, {PeripheralInfo} from 'react-native-ble-manager';
 import Battery from './Battery';
 import BoardHeader from './BoardHeader';
 import ConfigEditor from './ConfigEditor';
-import {ConnectionState} from './ConnectionState';
+import {ConnectionState} from './util/ConnectionState';
 import ConnectionStatus from './ConnectionStatus';
 import ModeSelection from './ModeSelection';
 import {AppConfig, SavedBoard, StorageService} from './StorageService';
 import Telemetry from './Telemetry';
 import {Typography} from './Typography';
 
-import {ONEWHEEL_SERVICE_UUID} from './ble';
+import {ONEWHEEL_SERVICE_UUID} from './util/Bluetooth';
 const BleManagerModule = NativeModules.BleManager;
 const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 

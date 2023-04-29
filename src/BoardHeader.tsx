@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontsize.large,
     marginLeft: 'auto',
     marginRight: 'auto',
-    marginTop: -25,
+    // marginTop: -25,
   },
   editIcon: {top: -20, marginLeft: '-25%'},
   flexRow: {

@@ -4,7 +4,7 @@ import {Buffer} from '@craftzdog/react-native-buffer';
 import {Text, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {VictoryBoxPlot, VictoryPie} from 'victory-native';
-import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './ble';
+import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/Bluetooth';
 import {AppConfig} from './StorageService';
 
 interface Props {

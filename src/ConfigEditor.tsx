@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {
   Button,
+  FlatList,
   Modal,
   Pressable,
   SafeAreaView,
@@ -9,7 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import {AppConfig} from './StorageService';
+import {AppConfig, SavedBoard, StorageService} from './StorageService';
 import {Typography} from './Typography';
 
 type Props = {
@@ -21,8 +22,10 @@ type Props = {
 const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
   const [editting, setEditting] = useState(false);
   const [tempConfig, setTempConfig] = useState(config);
+  const [savedBoards, setSavedBoards] = useState<SavedBoard[]>([]);
 
   useEffect(() => {
+    StorageService.getSavedBoards().then(boards => setSavedBoards(boards));
     setTempConfig(config);
   }, [config]);
 
@@ -111,11 +114,19 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
           </View>
           <View>
             <Text style={styles.optionLabel}>Saved Boards</Text>
-            {[].map(board => (
-              <Pressable>
-                <Text>{board}</Text>
-              </Pressable>
-            ))}
+            {savedBoards.length > 0 ? (
+              <FlatList
+                data={savedBoards}
+                renderItem={({item}) => (
+                  <Text>
+                    {item.name} : {item.id} : {item.autoconnect}
+                  </Text>
+                )}
+                keyExtractor={item => item.id}
+              />
+            ) : (
+              <Text>No saved boards.</Text>
+            )}
           </View>
           <Button
             color={Typography.colors.emerald}
