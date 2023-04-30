@@ -3,7 +3,7 @@ import React, {useEffect, useState} from 'react';
 import {Buffer} from '@craftzdog/react-native-buffer';
 import {Button, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
-import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/Bluetooth';
+import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
 import {inferBoardFromHardwareRevision} from './util/board';
 
 type SupportedBoards = 'XR' | 'Pint';
@@ -53,17 +53,17 @@ const ModeSelection = ({device}: Props) => {
     if (device == null) {
       throw new Error('No connected device. (ModeSelection)');
     }
-
-    await BTManager.write(
-      device.id,
-      ONEWHEEL_SERVICE_UUID,
-      CHARACTERISTICS.rideMode,
-      [modeValue],
-    )
-      .then(() => setMode(mode))
-      .catch(err => {
-        console.error('Unable to set new ridemode:', err);
-      });
+    try {
+      await BTManager.write(
+        device.id,
+        ONEWHEEL_SERVICE_UUID,
+        CHARACTERISTICS.rideMode,
+        [modeValue],
+      );
+      setMode(modeValue);
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   useEffect(() => {

@@ -24,7 +24,7 @@ import {AppConfig, SavedBoard, StorageService} from './StorageService';
 import Telemetry from './Telemetry';
 import {Typography} from './Typography';
 
-import {ONEWHEEL_SERVICE_UUID} from './util/Bluetooth';
+import {ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
 const BleManagerModule = NativeModules.BleManager;
 const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
@@ -42,7 +42,7 @@ const App = () => {
   const [connectedBoard, setConnectedBoard] = useState<SavedBoard | undefined>(
     undefined,
   );
-  const [savedBoards, setSavedBoards] = useState<SavedBoard[]>([]);
+  const [savedBoards] = useState<SavedBoard[]>([]);
 
   async function scan(deviceId?: string): Promise<PeripheralInfo[]> {
     try {
@@ -103,6 +103,19 @@ const App = () => {
       console.debug('Connected: ', connected.name ?? 'unknown');
       setConnectedDevice(connected);
       setConnectionState(ConnectionState.CONNECTED);
+      let found = (await StorageService.getSavedBoards()).find(
+        b => b.id === deviceId,
+      );
+      if (!found) {
+        found = {
+          id: deviceId,
+          name: deviceId,
+          autoconnect: true,
+          wheelSize: 10.5, // @fixme: Determine wheel size based on board generation.
+        };
+        await StorageService.saveBoard(found);
+      }
+      setConnectedBoard(found);
       return connected;
     } catch (err: any) {
       setConnectionState(ConnectionState.DISCONNECTED);
@@ -133,15 +146,13 @@ const App = () => {
           );
         },
       );
-      // Fetch any saved boards and attempt to autoconnect.
-      const saved = await StorageService.getSavedBoards();
-      setSavedBoards(saved);
       const {autoconnect} = savedConfig;
       const scanned = await scan();
       // Observe autoconnect priority.
       // @FIXME: optimize this to only traverse scanned once.
       const found = autoconnect.find(id => scanned.find(dev => dev.id === id));
       if (found != null) {
+        setConnectionState(ConnectionState.CONNECTING);
         await connect(found, scanned);
       }
     };
@@ -158,15 +169,19 @@ const App = () => {
       />
       <View style={{backgroundColor: Typography.colors.white}}>
         <View style={styles.header}>
-          <ConfigEditor
-            style={styles.configButton}
-            handleConfigUpdate={updated => {
-              StorageService.updateAppConfig(updated).then(saved =>
-                setConfig(saved),
-              );
-            }}
-            config={config!}
-          />
+          {config != null ? (
+            <ConfigEditor
+              style={styles.configButton}
+              handleConfigUpdate={updated => {
+                StorageService.updateAppConfig(updated).then(saved =>
+                  setConfig(saved),
+                );
+              }}
+              config={config}
+            />
+          ) : (
+            <></>
+          )}
           <Text style={styles.logo}>
             <Text
               style={{
@@ -237,8 +252,10 @@ const App = () => {
                     dev.id
                   }
                   key={dev.id}
+                  color={Typography.colors.emerald}
                   disabled={connectionState !== ConnectionState.DISCONNECTED}
                   onPress={() => {
+                    setConnectionState(ConnectionState.CONNECTING);
                     connect(dev.id, devices).catch(err => {
                       console.error(err);
                     });

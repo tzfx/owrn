@@ -18,15 +18,19 @@ export type SavedBoard = {
   topSpeed?: number;
 };
 
+export type SpeedUnit = 'MPH' | 'KPH';
+export type TemperatureUnit = 'C' | 'F' | 'K';
+export type ThemeOption = 'light' | 'dark' | 'system';
+
 export type AppConfig = {
   // A prioritied list of ids to attempt autoconnection.
   autoconnect: string[];
   // Temperature Unit
-  temperatureUnit: 'F' | 'C' | 'K';
+  temperatureUnit: TemperatureUnit;
   // Speed Unit
-  speedUnit: 'MPH' | 'KPH';
+  speedUnit: SpeedUnit;
   // Theme setting-- light/dark/defer to system.
-  theme: 'light' | 'dark' | 'system';
+  theme: ThemeOption;
   debug: boolean;
 };
 
@@ -67,13 +71,18 @@ const StorageService: IStorageService = {
     );
   },
   updateAppConfig: (update: Partial<AppConfig>) => {
-    return StorageService.getAppConfig()
-      .then(config => ({...config, ...update} as AppConfig))
-      .then(config =>
-        AsyncStorage.setItem(PREFIX_APP_CONFIG, JSON.stringify(config)).then(
-          () => config,
-        ),
-      );
+    return StorageService.getAppConfig().then(config => {
+      if (
+        update.autoconnect?.length === 1 &&
+        !config.autoconnect.includes(update.autoconnect[0])
+      ) {
+        update.autoconnect = [update.autoconnect[0], ...config.autoconnect];
+      }
+      return AsyncStorage.setItem(
+        PREFIX_APP_CONFIG,
+        JSON.stringify({...config, ...update}),
+      ).then(() => config);
+    });
   },
   getSavedBoards: () => {
     return AsyncStorage.getAllKeys()
@@ -111,8 +120,14 @@ const StorageService: IStorageService = {
         ),
       );
   },
-  removeBoard: function (id: string): Promise<void> {
-    return AsyncStorage.removeItem(PREFIX_SAVEDBOARDS + id);
+  removeBoard: async function (id: string): Promise<void> {
+    await AsyncStorage.removeItem(PREFIX_SAVEDBOARDS + id);
+    const {autoconnect} = await StorageService.getAppConfig();
+    if (autoconnect.includes(id)) {
+      await StorageService.updateAppConfig({
+        autoconnect: autoconnect.filter(i => i !== id),
+      });
+    }
   },
 };
 

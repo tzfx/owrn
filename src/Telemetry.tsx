@@ -6,7 +6,7 @@ import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {VictoryPie} from 'victory-native';
 import {AppConfig, SavedBoard, StorageService} from './StorageService';
 import {Typography} from './Typography';
-import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/Bluetooth';
+import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
 
 interface Props {
   board?: SavedBoard;
@@ -163,8 +163,8 @@ const Telemetry = ({board, device, config}: Props) => {
       </Text>
       <Text style={styles.odometerLabel}>
         (
-        {rotations2Distance(tripRotations, board?.wheelSize, metric).toFixed(2)}
-        ) {odometer} {config?.speedUnit === 'KPH' ? 'km' : 'mi'}
+        {rotations2Distance(tripRotations, board?.wheelSize, metric).toFixed(1)}
+        ) {(odometer * (metric ? 1.609 : 1)).toFixed(1)} {metric ? 'km' : 'mi'}
       </Text>
     </View>
   );

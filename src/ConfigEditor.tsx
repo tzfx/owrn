@@ -10,7 +10,14 @@ import {
   Text,
   View,
 } from 'react-native';
-import {AppConfig, SavedBoard, StorageService} from './StorageService';
+import {
+  AppConfig,
+  SavedBoard,
+  SpeedUnit,
+  StorageService,
+  TemperatureUnit,
+  ThemeOption,
+} from './StorageService';
 import {Typography} from './Typography';
 
 type Props = {
@@ -20,14 +27,37 @@ type Props = {
 };
 
 const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
+  const [autoconnect, setAutoconnect] = useState(config.autoconnect);
   const [editting, setEditting] = useState(false);
+  const [debug, setDebug] = useState(config.debug);
+  const [speedUnit, setSpeedUnit] = useState<SpeedUnit>(config.speedUnit);
+  const [temperatureUnit, setTemperatureUnit] = useState<TemperatureUnit>(
+    config.temperatureUnit,
+  );
+  const [theme, setTheme] = useState<ThemeOption>(config.theme);
   const [tempConfig, setTempConfig] = useState(config);
   const [savedBoards, setSavedBoards] = useState<SavedBoard[]>([]);
 
   useEffect(() => {
-    StorageService.getSavedBoards().then(boards => setSavedBoards(boards));
-    setTempConfig(config);
+    setAutoconnect(config.autoconnect);
+    setDebug(config.debug);
+    setSpeedUnit(config.speedUnit);
+    setTheme(config.theme);
+    setTemperatureUnit(config.temperatureUnit);
   }, [config]);
+
+  useEffect(() => {
+    const update: AppConfig = {
+      autoconnect,
+      debug,
+      speedUnit,
+      temperatureUnit,
+      theme,
+    };
+    setTempConfig(update);
+  }, [autoconnect, debug, speedUnit, temperatureUnit, theme]);
+
+  StorageService.getSavedBoards().then(boards => setSavedBoards(boards));
 
   return (
     <View style={style}>
@@ -50,7 +80,7 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
                 key={unit}
                 style={styles.optionValue}
                 onPress={() => {
-                  setTempConfig({...tempConfig, speedUnit: unit as any});
+                  setSpeedUnit(unit as SpeedUnit);
                 }}>
                 <Text
                   style={
@@ -69,7 +99,7 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
               <Pressable
                 key={unit}
                 onPress={() => {
-                  setTempConfig({...tempConfig, temperatureUnit: unit as any});
+                  setTemperatureUnit(unit as any);
                 }}
                 style={styles.optionValue}>
                 <Text
@@ -89,7 +119,7 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
               <Pressable
                 key={theme}
                 onPress={() => {
-                  setTempConfig({...tempConfig, theme: theme as any});
+                  setTheme(theme as any);
                 }}
                 style={styles.optionValue}>
                 <Text
@@ -108,7 +138,7 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
             <Switch
               value={tempConfig?.debug}
               onChange={() => {
-                setTempConfig({...tempConfig, debug: !tempConfig.debug});
+                setDebug(debug);
               }}
             />
           </View>
@@ -119,7 +149,18 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
                 data={savedBoards}
                 renderItem={({item}) => (
                   <Text>
-                    {item.name} : {item.id} : {item.autoconnect}
+                    {item.name} : {item.id.split(/.{4}-.{23}/).join('...')}
+                    {item.autoconnect ? ' : autoconnect' : ''}
+                    <Button
+                      title="delete"
+                      onPress={() =>
+                        StorageService.removeBoard(item.id).then(() =>
+                          setSavedBoards(
+                            savedBoards.filter(b => b.id !== item.id),
+                          ),
+                        )
+                      }
+                    />
                   </Text>
                 )}
                 keyExtractor={item => item.id}

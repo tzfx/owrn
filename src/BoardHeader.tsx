@@ -3,7 +3,7 @@ import * as React from 'react';
 import {PeripheralInfo} from 'react-native-ble-manager';
 
 import {SavedBoard, StorageService} from './StorageService';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {Typography} from './Typography';
 import {
   Button,
@@ -26,17 +26,25 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
   const [autoconnect, setAutoconnect] = useState(board?.autoconnect ?? false);
   const [editting, setEditting] = useState(false);
   const [formBoardname, setFormBoardname] = useState(board?.name);
-  const [formWheelsize, setFormWheelsize] = useState(board?.wheelSize);
+  const [formWheelsize, setFormWheelsize] = useState(board?.wheelSize ?? 10.5);
 
-  async function saveBoard(id: string) {
+  async function saveBoard(id: string, newAutoconnect: boolean = autoconnect) {
     await StorageService.saveBoard({
       id,
       name: formBoardname ?? id,
-      autoconnect,
+      autoconnect: newAutoconnect,
       wheelSize: +(formWheelsize ?? 10.5),
     });
     return handleSave();
   }
+
+  useEffect(() => {
+    if (board != null) {
+      setAutoconnect(board.autoconnect);
+      setFormBoardname(board.name);
+      setFormWheelsize(board.wheelSize);
+    }
+  }, [board]);
 
   return (
     <View>
@@ -59,6 +67,16 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
               keyboardType="decimal-pad"
               onChangeText={value => setFormWheelsize(+value)}
             />
+            <View style={styles.switchContainer}>
+              <Text style={styles.switchLabel}>Autoconnect</Text>
+              <Switch
+                onValueChange={value => {
+                  setAutoconnect(value);
+                  saveBoard(connectedDevice!.id, value).then(() => {});
+                }}
+                value={autoconnect}
+              />
+            </View>
             <View style={styles.flexRow}>
               <Button
                 color={'grey'}
@@ -79,23 +97,13 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
           </View>
         </SafeAreaView>
       </Modal>
-      <View style={styles.flexRow}>
+      <View style={styles.switchContainer}>
         <View style={styles.editIcon}>
           <Button title="✏️" onPress={() => setEditting(true)} />
         </View>
         <Text style={styles.boardName}>
           {board?.name ?? connectedDevice?.name ?? connectedDevice?.id}
         </Text>
-      </View>
-      <View style={styles.switchContainer}>
-        <Text style={styles.switchLabel}>Autoconnect</Text>
-        <Switch
-          onValueChange={value => {
-            setAutoconnect(value);
-            saveBoard(connectedDevice!.id);
-          }}
-          value={autoconnect}
-        />
       </View>
     </View>
   );
@@ -108,9 +116,10 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontsize.large,
     marginLeft: 'auto',
     marginRight: 'auto',
-    // marginTop: -25,
+    maxWidth: 500,
+    marginTop: -25,
   },
-  editIcon: {top: -20, marginLeft: '-25%'},
+  editIcon: {top: -15, marginLeft: '-25%'},
   flexRow: {
     flexDirection: 'row',
   },
@@ -137,6 +146,7 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   switchContainer: {
+    width: 100,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',

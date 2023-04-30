@@ -10,8 +10,9 @@ describe('StorageService - AppConfig', () => {
     const config = await StorageService.getAppConfig();
     expect(config).toEqual({
       autoconnect: [],
-      temperatureUnit: 'F',
+      debug: false,
       speedUnit: 'MPH',
+      temperatureUnit: 'F',
       theme: 'system',
     });
   });
@@ -26,6 +27,22 @@ describe('StorageService - AppConfig', () => {
       ...config,
       speedUnit: 'KPH',
       autoconnect: ['1234'],
+    });
+  });
+  it('should add an id to autoconnect if only one is passed', async () => {
+    const config = await StorageService.getAppConfig();
+    await StorageService.updateAppConfig({
+      speedUnit: 'KPH',
+      autoconnect: ['1234'],
+    });
+    await StorageService.updateAppConfig({
+      autoconnect: ['5678'],
+    });
+    const updated = await StorageService.getAppConfig();
+    expect(updated).toEqual({
+      ...config,
+      speedUnit: 'KPH',
+      autoconnect: ['5678', '1234'],
     });
   });
 });

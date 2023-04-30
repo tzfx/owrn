@@ -4,8 +4,8 @@ import {Buffer} from '@craftzdog/react-native-buffer';
 import {Text, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {VictoryBoxPlot, VictoryPie} from 'victory-native';
-import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/Bluetooth';
 import {AppConfig} from './StorageService';
+import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
 
 interface Props {
   device?: PeripheralInfo;
@@ -130,7 +130,7 @@ class Battery extends Component<Props, State> {
   render(): JSX.Element {
     // Render mode selection based on OW generation.
     return (
-      <View style={{marginTop: -40}}>
+      <View style={{}}>
         <Text style={styles.tempLabel}>
           {(this.props.config?.temperatureUnit === 'F'
             ? this.CtoF(this.state.temperature)
@@ -166,6 +166,9 @@ class Battery extends Component<Props, State> {
           style={{
             parent: {
               marginTop: -175,
+            },
+            medianLabels: {
+              fontSize: 10,
             },
           }}
           medianLabels={() => this.state.voltage?.toFixed(1) + 'V'}
