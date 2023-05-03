@@ -22,7 +22,7 @@ import ConnectionStatus from './ConnectionStatus';
 import ModeSelection from './ModeSelection';
 import {AppConfig, SavedBoard, StorageService} from './StorageService';
 import Telemetry from './Telemetry';
-import {Typography} from './Typography';
+import {Themes, Typography} from './Typography';
 
 import {ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
 const BleManagerModule = NativeModules.BleManager;
@@ -123,6 +123,16 @@ const App = () => {
     }
   }
 
+  // FIXME: Proper theming based off config.
+  const theme = Themes.light;
+  // const systemTheme = useColorScheme();
+  // const theme =
+  //   config?.theme === 'system'
+  //     ? Themes[systemTheme ?? 'light']
+  //     : config?.theme === 'dark'
+  //     ? Themes.dark
+  //     : Themes.light;
+
   // Initial setup.
   useEffect(() => {
     const init = async () => {
@@ -160,21 +170,22 @@ const App = () => {
   }, []);
 
   return (
-    <SafeAreaView
-      style={{...styles.base, backgroundColor: Typography.colors.white}}>
+    <SafeAreaView style={theme}>
       <StatusBar
-        barStyle={'light-content'}
-        // barStyle={this.state.isDarkMode ? 'light-content' : 'dark-content'}
-        // backgroundColor={this.state.backgroundStyle.backgroundColor}
+        barStyle={config?.theme === 'dark' ? 'light-content' : 'dark-content'}
       />
-      <View style={{backgroundColor: Typography.colors.white}}>
-        <View style={styles.header}>
+      <View style={theme}>
+        <View
+          style={{
+            ...styles.header,
+            ...theme,
+          }}>
           {config != null ? (
             <ConfigEditor
-              style={styles.configButton}
+              style={theme}
               handleConfigUpdate={updated => {
-                StorageService.updateAppConfig(updated).then(saved =>
-                  setConfig(saved),
+                StorageService.updateAppConfig(updated).then(() =>
+                  setConfig(updated),
                 );
               }}
               config={config}
@@ -199,11 +210,8 @@ const App = () => {
             <View style={{...styles.fullscreen}}>
               <BoardHeader
                 board={connectedBoard}
-                handleSave={async () => {
-                  const board = await StorageService.getBoard(
-                    connectedDevice!.id,
-                  );
-                  setConnectedBoard(board);
+                handleSave={async updated => {
+                  setConnectedBoard(updated);
                 }}
                 connectedDevice={connectedDevice}
               />
@@ -281,7 +289,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     fontSize: Typography.fontsize.xl,
   },
-  logo: {flex: 1, left: -5},
+  logo: {flex: 1, left: 40},
   fullscreen: {
     marginTop: '5%',
     height: '100%',

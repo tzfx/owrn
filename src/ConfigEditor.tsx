@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {
   Button,
   FlatList,
@@ -27,7 +27,6 @@ type Props = {
 };
 
 const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
-  const [autoconnect, setAutoconnect] = useState(config.autoconnect);
   const [editting, setEditting] = useState(false);
   const [debug, setDebug] = useState(config.debug);
   const [speedUnit, setSpeedUnit] = useState<SpeedUnit>(config.speedUnit);
@@ -35,32 +34,12 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
     config.temperatureUnit,
   );
   const [theme, setTheme] = useState<ThemeOption>(config.theme);
-  const [tempConfig, setTempConfig] = useState(config);
   const [savedBoards, setSavedBoards] = useState<SavedBoard[]>([]);
-
-  useEffect(() => {
-    setAutoconnect(config.autoconnect);
-    setDebug(config.debug);
-    setSpeedUnit(config.speedUnit);
-    setTheme(config.theme);
-    setTemperatureUnit(config.temperatureUnit);
-  }, [config]);
-
-  useEffect(() => {
-    const update: AppConfig = {
-      autoconnect,
-      debug,
-      speedUnit,
-      temperatureUnit,
-      theme,
-    };
-    setTempConfig(update);
-  }, [autoconnect, debug, speedUnit, temperatureUnit, theme]);
 
   StorageService.getSavedBoards().then(boards => setSavedBoards(boards));
 
   return (
-    <View style={style}>
+    <View style={{...styles.boxed, ...style}}>
       <Pressable onPress={() => setEditting(true)}>
         <Text style={{fontSize: Typography.fontsize.xl}}>≡</Text>
       </Pressable>
@@ -68,8 +47,13 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
         animationType="slide"
         visible={editting}
         onDismiss={() => {
-          handleConfigUpdate(tempConfig);
-          setEditting(false);
+          handleConfigUpdate({
+            autoconnect: savedBoards.map(b => b.id),
+            debug,
+            speedUnit,
+            theme,
+            temperatureUnit,
+          });
         }}>
         <SafeAreaView style={styles.boxed}>
           <Text style={styles.h1}>User Options</Text>
@@ -84,7 +68,7 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
                 }}>
                 <Text
                   style={
-                    tempConfig?.speedUnit === unit
+                    speedUnit === unit
                       ? {...styles.selected}
                       : {...styles.deselected}
                   }>
@@ -104,7 +88,7 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
                 style={styles.optionValue}>
                 <Text
                   style={
-                    tempConfig?.temperatureUnit === unit
+                    temperatureUnit === unit
                       ? {...styles.selected}
                       : {...styles.deselected}
                   }>
@@ -115,20 +99,22 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
           </View>
           <View style={styles.optionRow}>
             <Text style={styles.optionLabel}>Theme</Text>
-            {['light', 'dark', 'system'].map(theme => (
+            {['light', 'dark', 'system'].map(option => (
               <Pressable
-                key={theme}
+                key={option}
+                // Until we actually get this working...
+                disabled={true}
                 onPress={() => {
-                  setTheme(theme as any);
+                  setTheme(option as any);
                 }}
                 style={styles.optionValue}>
                 <Text
                   style={
-                    tempConfig?.theme === theme
+                    option === theme
                       ? {...styles.selected}
                       : {...styles.deselected}
                   }>
-                  {theme}
+                  {option}
                 </Text>
               </Pressable>
             ))}
@@ -136,9 +122,9 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
           <View style={styles.optionRow}>
             <Text style={styles.optionLabel}>Debug</Text>
             <Switch
-              value={tempConfig?.debug}
-              onChange={() => {
-                setDebug(debug);
+              value={debug}
+              onValueChange={value => {
+                setDebug(value);
               }}
             />
           </View>
@@ -171,7 +157,7 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
           </View>
           <Button
             color={Typography.colors.emerald}
-            title="Close"
+            title="Save"
             onPress={() => setEditting(false)}
           />
         </SafeAreaView>
@@ -181,7 +167,7 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
 };
 
 const styles = StyleSheet.create({
-  boxed: {top: 60, marginHorizontal: 30},
+  boxed: {marginHorizontal: 30},
   h1: {
     fontSize: Typography.fontsize.medium,
     paddingBottom: 20,

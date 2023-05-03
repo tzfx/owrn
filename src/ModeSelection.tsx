@@ -5,6 +5,7 @@ import {Button, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
 import {inferBoardFromHardwareRevision} from './util/board';
+import {Typography} from './Typography';
 
 type SupportedBoards = 'XR' | 'Pint';
 
@@ -131,6 +132,7 @@ const ModeSelection = ({device}: Props) => {
           key={modeName}
           disabled={mode === value}
           onPress={() => select(modeName).catch(err => console.error(err))}
+          color={Typography.colors.emerald}
         />
       ))}
     </View>

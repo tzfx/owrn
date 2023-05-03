@@ -19,7 +19,7 @@ import {
 type Props = {
   connectedDevice?: PeripheralInfo;
   board?: SavedBoard;
-  handleSave: () => {};
+  handleSave: (updated: SavedBoard) => {};
 };
 
 const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
@@ -29,13 +29,14 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
   const [formWheelsize, setFormWheelsize] = useState(board?.wheelSize ?? 10.5);
 
   async function saveBoard(id: string, newAutoconnect: boolean = autoconnect) {
-    await StorageService.saveBoard({
+    const updated = {
       id,
       name: formBoardname ?? id,
       autoconnect: newAutoconnect,
       wheelSize: +(formWheelsize ?? 10.5),
-    });
-    return handleSave();
+    };
+    await StorageService.saveBoard(updated);
+    return handleSave(updated);
   }
 
   useEffect(() => {
@@ -85,6 +86,7 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
               />
               <Button
                 title="Save"
+                color={Typography.colors.emerald}
                 onPress={() => {
                   if (connectedDevice) {
                     saveBoard(connectedDevice.id).finally(() =>
@@ -124,35 +126,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   modalContainer: {
-    alignItems: 'center',
-    backgroundColor: Typography.colors.emerald,
     flexDirection: 'column',
     height: '100%',
   },
   modalInput: {
     backgroundColor: Typography.colors.white,
-    fontSize: Typography.fontsize.medium,
     marginHorizontal: 0,
     padding: 30,
     width: '100%',
   },
   modalInputLabel: {
-    fontSize: Typography.fontsize.medium,
     paddingTop: 10,
   },
   modalInputBox: {
-    borderWidth: 0.5,
+    borderWidth: StyleSheet.hairlineWidth,
     height: 40,
     padding: 5,
   },
   switchContainer: {
+    marginTop: 10,
+    marginHorizontal: 100,
     width: 100,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
   },
   switchLabel: {
-    fontSize: Typography.fontsize.small,
     paddingRight: 10,
   },
 });

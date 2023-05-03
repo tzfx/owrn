@@ -38,8 +38,6 @@ const Telemetry = ({board, device, config}: Props) => {
     return ((diameter * rotations) / (12 * 5_280)) * (km ? 1.609 : 1);
   }
 
-  // const trip
-
   useEffect(() => {
     function refreshRPM() {
       if (device?.id != null) {
