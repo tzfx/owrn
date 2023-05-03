@@ -4,7 +4,6 @@
   &#xa0;
 
 </div>
-
 <h1 align="center">owrn</h1>
 
 <!-- <p align="center">
@@ -28,7 +27,7 @@
 	🚧 Status: At current, this is absolutely a work in progress. 🚧
 </h4> 
 
-<hr>
+---
 
 <p align="center">
   <a href="#dart-about">About</a> &#xa0; | &#xa0; 
@@ -41,20 +40,20 @@
 
 <br>
 
-## :dart: About ##
+## :dart: About
 
 This is a react native application for controlling rewheel-flashed boards that have been modified using the rewheel app at <https://rewheel.app>.
 
 
 *It is not affiliated in any way with the actual ReWheel project.*
 
-<!-- ## :sparkles: Features ##
+<!-- ## :sparkles: Features
 
 :heavy_check_mark: Feature 1;\
 :heavy_check_mark: Feature 2;\
 :heavy_check_mark: Feature 3; -->
 
-<!-- ## :rocket: Technologies ##
+<!-- ## :rocket: Technologies
 
 The following tools were used in this project:
 
@@ -64,7 +63,7 @@ The following tools were used in this project:
 - [React Native](https://reactnative.dev/)
 - [TypeScript](https://www.typescriptlang.org/) -->
 
-## :checkered_flag: Getting Started ##
+## :checkered_flag: Getting Started
 
 ```bash
 # Download Xcode
@@ -83,13 +82,13 @@ $ cd ios (or) cd android
 $ pod install
 ```
 
-## Xcode: ##
-### :iphone: Install on iPhone: ###
+## Xcode:
+### :iphone: Install on iPhone:
 Plug in iphone and select your phone as the target in xcode.
 In the product menu select "Build For Running"
 Now enable Developer mode on your iPhone using the following guide: <a href=https://help.testapp.io/faq/enable-developer-mode-ios/>Enable Developer Mode</a>
 <br>
 
-## Made with :heart: by <a href="https://github.com/tzfx" target="_blank">A. Stadler</a> ##
+## Made with :heart: by <a href="https://github.com/tzfx" target="_blank">A. Stadler</a>
 
 <a href="#top">Back to top</a>
