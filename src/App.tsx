@@ -1,4 +1,5 @@
-import React, {Component} from 'react';
+import React, {useEffect, useState} from 'react';
+
 import {
   Alert,
   Button,
@@ -8,285 +9,303 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  useColorScheme,
   View,
 } from 'react-native';
-import {Colors} from 'react-native/Libraries/NewAppScreen';
 
-import {ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
-import {StorageService, SavedBoard} from './StorageService';
+import BleManager, {PeripheralInfo} from 'react-native-ble-manager';
 
 import Battery from './Battery';
 import BoardHeader from './BoardHeader';
-import {ConnectionState} from './ConnectionState';
+import ConfigEditor from './ConfigEditor';
+import {ConnectionState} from './util/ConnectionState';
 import ConnectionStatus from './ConnectionStatus';
 import ModeSelection from './ModeSelection';
+import {AppConfig, SavedBoard, StorageService} from './StorageService';
 import Telemetry from './Telemetry';
+import {Themes, Typography} from './Typography';
 
-import BleManager, {PeripheralInfo} from 'react-native-ble-manager';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Typography} from './Typography';
+import {ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
 const BleManagerModule = NativeModules.BleManager;
 const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
-interface State {
-  connectedDevice?: PeripheralInfo;
-  connectionState: ConnectionState;
-  devices: any[];
-  isConnected: boolean;
-  isDarkMode: boolean;
-  backgroundStyle: {
-    backgroundColor: string;
-  };
-  boardsaved: boolean;
-  board?: SavedBoard;
-  savedBoards: SavedBoard[];
-}
+const scanDuration = 2;
 
-class App extends Component<{}, State> {
-  state: Readonly<State> = {
-    connectionState: ConnectionState.DISCONNECTED,
-    devices: [],
-    savedBoards: [],
-    isConnected: false,
-    isDarkMode: false,
-    backgroundStyle: {
-      backgroundColor: Colors.lighter,
-    },
-    boardsaved: false,
-  };
+const App = () => {
+  const [connectionState, setConnectionState] = useState(
+    ConnectionState.DISCONNECTED,
+  );
+  const [connectedDevice, setConnectedDevice] = useState<
+    PeripheralInfo | undefined
+  >(undefined);
+  const [config, setConfig] = useState<AppConfig | undefined>(undefined);
+  const [devices, setDevices] = useState<PeripheralInfo[]>([]);
+  const [connectedBoard, setConnectedBoard] = useState<SavedBoard | undefined>(
+    undefined,
+  );
+  const [savedBoards, setSavedBoards] = useState<SavedBoard[]>([]);
 
-  private debug = false;
-
-  // Seconds to scan for a valid device.
-  private readonly scanDuration = 1;
-
-  private async tryBTScan(deviceId?: string): Promise<void> {
-    this.setState({connectionState: ConnectionState.SCANNING});
+  async function scan(deviceId?: string): Promise<PeripheralInfo[]> {
     try {
-      await BleManager.scan(
-        [ONEWHEEL_SERVICE_UUID],
-        this.scanDuration,
-        false,
-      ).catch(() => {});
+      await BleManager.scan([ONEWHEEL_SERVICE_UUID], scanDuration, false).catch(
+        () => {},
+      );
+      setConnectionState(ConnectionState.SCANNING);
       console.debug('Scan started.');
-
+      let found: PeripheralInfo[] = [];
       const refresh = setInterval(async () => {
-        const devices = await BleManager.getDiscoveredPeripherals();
-        console.debug('Devices:', devices);
-        this.setState({devices});
-        if (deviceId && devices.some(d => d.id === deviceId)) {
+        found = await BleManager.getDiscoveredPeripherals();
+        console.debug('Devices:', found);
+        if (deviceId && found.some(d => d.id === deviceId)) {
           clearInterval(refresh);
         }
       }, 250);
 
       await new Promise(res =>
-        setTimeout(() => res(true), this.scanDuration * 1000),
+        setTimeout(() => res(true), scanDuration * 1000),
       );
       clearInterval(refresh);
-      this.setState({connectionState: ConnectionState.DISCONNECTED});
-
-      if (
-        deviceId != null &&
-        this.state.devices.every(d => d.id !== deviceId)
-      ) {
+      console.debug('Scan complete.');
+      setConnectionState(ConnectionState.DISCONNECTED);
+      if (deviceId != null && found.every(d => d.id !== deviceId)) {
         console.warn(
           `Unable to locate ${deviceId}. Will not be able to autoconnect.`,
         );
       }
-      if (this.state.devices.length === 0) {
+      if (found.length === 0) {
         Alert.alert(
           'No devices found',
           'There were no devices found within range.\nMake sure your onewheel is powered on and not connected to another application.',
         );
       }
+      setDevices(found);
+      return found;
     } catch (err) {
       console.error('Failed to scan for bt devices.', err);
+      setDevices([]);
+      return [];
     }
   }
 
-  private async connect(deviceId: string): Promise<void> {
+  async function connect(
+    deviceId: string,
+    scannedDevices: PeripheralInfo[],
+  ): Promise<PeripheralInfo> {
     console.debug(`Attempting connection to ${deviceId}`);
-    this.setState({connectionState: ConnectionState.CONNECTING}, async () => {
-      try {
-        if (this.state.devices.every(d => d.id !== deviceId)) {
-          throw new Error(`Device ${deviceId} not detected`);
-        }
-        await BleManager.connect(deviceId);
-        const connectedDevice = await BleManager.retrieveServices(deviceId);
-        if (connectedDevice == null) {
-          throw new Error('Connection failed');
-        }
-        console.debug('Connected: ', connectedDevice.name ?? 'unknown');
-        this.setState({
-          connectionState: ConnectionState.CONNECTED,
-          connectedDevice,
-          isConnected: true,
-          boardsaved: true,
-        });
-      } catch (err) {
-        this.setState({
-          connectionState: ConnectionState.DISCONNECTED,
-        });
-        console.error(err);
+    try {
+      if (scannedDevices.every(d => d.id !== deviceId)) {
+        throw new Error(`Device ${deviceId} not detected`);
       }
-    });
+      await BleManager.connect(deviceId);
+      const connected = await BleManager.retrieveServices(deviceId);
+      if (connected == null) {
+        throw new Error('Connection failed');
+      }
+      console.debug('Connected: ', connected.name ?? 'unknown');
+      setConnectedDevice(connected);
+      setConnectionState(ConnectionState.CONNECTED);
+      let found = (await StorageService.getSavedBoards()).find(
+        b => b.id === deviceId,
+      );
+      if (!found) {
+        found = {
+          id: deviceId,
+          name: deviceId,
+          autoconnect: true,
+          wheelSize: 10.5, // @fixme: Determine wheel size based on board generation.
+        };
+        await StorageService.saveBoard(found);
+      }
+      setConnectedBoard(found);
+      return connected;
+    } catch (err: any) {
+      setConnectionState(ConnectionState.DISCONNECTED);
+      throw new Error(err);
+    }
   }
 
-  async componentDidMount(): Promise<void> {
-    // IIFE hack so hooks work...
-    (async () => {
-      const isDarkMode = useColorScheme() === 'dark';
-      const backgroundStyle = {
-        backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-      };
+  // FIXME: Proper theming based off config.
+  const theme = Themes.light;
+  // const systemTheme = useColorScheme();
+  // const theme =
+  //   config?.theme === 'system'
+  //     ? Themes[systemTheme ?? 'light']
+  //     : config?.theme === 'dark'
+  //     ? Themes.dark
+  //     : Themes.light;
 
-      this.setState({backgroundStyle, isDarkMode});
-    })().catch(() => {}); // NOOP.
-
-    if (this.debug) {
-      await AsyncStorage.clear();
-    }
-
-    // Initialize Bluetooth Manager
-    try {
+  // Initial setup.
+  useEffect(() => {
+    const init = async () => {
+      const savedConfig = await StorageService.getAppConfig();
+      setSavedBoards((await StorageService.getSavedBoards()) ?? []);
+      setConfig(savedConfig);
+      console.debug('Got saved configuration ->', savedConfig);
       await BleManager.start({showAlert: true});
-      // wait 100ms
+      console.debug('BT Initialized.');
       await new Promise(res => setTimeout(() => res(true), 100));
-      console.debug('Bluetooth initialized.');
+      // Required for Android.
+      try {
+        await BleManager.enableBluetooth();
+      } catch (err) {
+        // Unsupported in iOS.
+        if (err !== 'Not supported') {
+          console.error(err);
+        }
+      }
+      // Setup disconnection listener.
       BleManagerEmitter.addListener(
         'BleManagerDisconnectPeripheral',
         ({peripheral}) => {
           console.debug(`Disconnection: ${JSON.stringify(peripheral)}`);
-          if (this.state.connectedDevice?.id === peripheral) {
-            this.setState(
-              {
-                connectionState: ConnectionState.DISCONNECTED,
-                connectedDevice: undefined,
-                isConnected: false,
-                devices: [],
-              },
-              () => {
-                Alert.alert(
-                  'Device Disconnected',
-                  'The application has lost connection to the OneWheel.',
-                );
-              },
-            );
-          }
+          setConnectionState(ConnectionState.DISCONNECTED);
+          setConnectedDevice(undefined);
+          setDevices([]);
+          Alert.alert(
+            'Device Disconnected',
+            'The application has lost connection to the OneWheel.',
+          );
         },
       );
-      const savedBoards = await StorageService.getSavedBoards();
-      const board = savedBoards.find(b => b.autoconnect);
-      this.setState({savedBoards, board});
-      if (board?.id != null) {
-        await this.tryBTScan(board.id);
-        await this.connect(board.id);
+      const {autoconnect} = savedConfig;
+      const scanned = await scan();
+      // Observe autoconnect priority.
+      // @FIXME: optimize this to only traverse scanned once.
+      const found = autoconnect.find(id => scanned.find(dev => dev.id === id));
+      if (found != null) {
+        setConnectionState(ConnectionState.CONNECTING);
+        await connect(found, scanned);
       }
-    } catch (err) {
-      console.error('Bluetooth failed to start!!', err);
-    }
-  }
+    };
+    init().catch(err => console.error(err));
+  }, []);
 
-  render(): JSX.Element {
-    return (
-      <SafeAreaView style={{...styles.base, ...this.state.backgroundStyle}}>
-        <StatusBar
-          barStyle={this.state.isDarkMode ? 'light-content' : 'dark-content'}
-          backgroundColor={this.state.backgroundStyle.backgroundColor}
-        />
-        <View style={this.state.backgroundStyle}>
-          <Text style={styles.header}>
-            <Text style={{color: Typography.colors.emerald}}>ow</Text>.rn
+  return (
+    <SafeAreaView style={theme}>
+      <StatusBar
+        barStyle={config?.theme === 'dark' ? 'light-content' : 'dark-content'}
+      />
+      <View style={theme}>
+        <View
+          style={{
+            ...styles.header,
+            ...theme,
+          }}>
+          {config != null ? (
+            <View style={{flex: 1}}>
+              <ConfigEditor
+                style={theme}
+                handleConfigUpdate={updated => {
+                  StorageService.updateAppConfig(updated).then(() =>
+                    setConfig(updated),
+                  );
+                }}
+                config={config}
+              />
+            </View>
+          ) : (
+            <></>
+          )}
+          <Text style={styles.logo}>
+            <Text
+              style={{
+                color: Typography.colors.emerald,
+                fontSize: Typography.fontsize.xl,
+              }}>
+              ow
+            </Text>
+            <Text style={{fontSize: Typography.fontsize.xl}}>.rn</Text>
           </Text>
-          <View>
-            {this.state.isConnected || this.debug === true ? (
-              <View
-                style={{...this.state.backgroundStyle, ...styles.fullscreen}}>
-                <BoardHeader
-                  board={this.state.board}
-                  handleSave={async () => {
-                    const board = await StorageService.getBoard(
-                      this.state.connectedDevice!.id,
-                    );
-                    this.setState({board});
-                  }}
-                  connectedDevice={this.state.connectedDevice}
-                />
+          <Text style={{...Typography.emptyFlex}} />
+        </View>
+        <View>
+          {connectionState === ConnectionState.CONNECTED || config?.debug ? (
+            <View style={{...styles.fullscreen}}>
+              <BoardHeader
+                board={connectedBoard}
+                handleSave={async updated => {
+                  setConnectedBoard(updated);
+                }}
+                connectedDevice={connectedDevice}
+              />
 
-                <Battery device={this.state.connectedDevice} />
-                <Telemetry
-                  board={this.state.board}
-                  device={this.state.connectedDevice}
-                />
-                <ModeSelection device={this.state.connectedDevice} />
-              </View>
-            ) : (
-              // <ModeSelection device={this.state.connectedDevice} />
-              <View style={styles.fullscreen}>
-                <ConnectionStatus
-                  style={{fontSize: Typography.fontsize.xxl}}
-                  status={this.state.connectionState}
-                />
+              <Battery config={config} device={connectedDevice} />
+              <Telemetry
+                config={config}
+                board={connectedBoard}
+                device={connectedDevice}
+              />
+              <ModeSelection device={connectedDevice} />
+            </View>
+          ) : (
+            <View style={styles.fullscreen}>
+              <ConnectionStatus
+                style={{fontSize: Typography.fontsize.xxl}}
+                status={connectionState}
+              />
+              <Button
+                color={Typography.colors.emerald}
+                title={
+                  connectionState === ConnectionState.DISCONNECTED
+                    ? 'Start Scanning'
+                    : connectionState === ConnectionState.SCANNING
+                    ? 'Scanning...'
+                    : connectionState === ConnectionState.CONNECTING
+                    ? 'Connecting...'
+                    : ''
+                }
+                disabled={[
+                  ConnectionState.SCANNING,
+                  ConnectionState.CONNECTING,
+                ].some(v => v === connectionState)}
+                onPress={() => {
+                  scan().catch(err => {
+                    console.error(err);
+                  });
+                }}
+              />
+              {devices.map(dev => (
                 <Button
                   title={
-                    this.state.connectionState === ConnectionState.DISCONNECTED
-                      ? 'Start Scanning'
-                      : this.state.connectionState === ConnectionState.SCANNING
-                      ? 'Scanning...'
-                      : this.state.connectionState ===
-                        ConnectionState.CONNECTING
-                      ? 'Connecting...'
-                      : ''
+                    savedBoards.find(d => d.id === dev.id)?.name ??
+                    dev.name ??
+                    dev.id
                   }
-                  disabled={[
-                    ConnectionState.SCANNING,
-                    ConnectionState.CONNECTING,
-                  ].some(v => v === this.state.connectionState)}
+                  key={dev.id}
+                  color={Typography.colors.emerald}
+                  disabled={connectionState !== ConnectionState.DISCONNECTED}
                   onPress={() => {
-                    this.tryBTScan().catch(err => {
+                    setConnectionState(ConnectionState.CONNECTING);
+                    connect(dev.id, devices).catch(err => {
                       console.error(err);
                     });
                   }}
                 />
-                {this.state.devices.map(dev => (
-                  <Button
-                    title={
-                      this.state.savedBoards.find(d => d.id === dev.id)?.name ??
-                      dev.name ??
-                      dev.id
-                    }
-                    key={dev.id}
-                    disabled={
-                      this.state.connectionState !==
-                      ConnectionState.DISCONNECTED
-                    }
-                    onPress={() => {
-                      this.connect(dev.id).catch(err => {
-                        console.error(err);
-                      });
-                    }}
-                  />
-                ))}
-              </View>
-            )}
-          </View>
+              ))}
+            </View>
+          )}
         </View>
-      </SafeAreaView>
-    );
-  }
-}
+      </View>
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
   base: {
     fontFamily: Typography.nativeFonts,
   },
+  configButton: {flex: 1, paddingLeft: 20},
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    fontSize: Typography.fontsize.xl,
+  },
+  logo: {flex: 1},
   fullscreen: {
-    marginTop: '10%',
+    marginTop: '5%',
     height: '100%',
     alignItems: 'center',
   },
-  header: {fontSize: Typography.fontsize.xl, textAlign: 'center'},
 });
 
 export default App;

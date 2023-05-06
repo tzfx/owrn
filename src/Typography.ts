@@ -1,3 +1,5 @@
+import {StyleSheet} from 'react-native';
+
 const Typography = {
   nativeFonts:
     '-apple-system, ".SFNSText-Regular", "San Francisco", "Roboto", "Segoe UI", "Helvetica Neue", "Lucida Grande", sans-serif',
@@ -18,6 +20,18 @@ const Typography = {
     xl: 48,
     xxl: 64,
   },
+  emptyFlex: {flex: 1},
 };
 
-export {Typography};
+const Themes = StyleSheet.create({
+  dark: {
+    color: Typography.colors.white,
+    backgroundColor: Typography.colors.black,
+  },
+  light: {
+    color: Typography.colors.black,
+    backgroundColor: Typography.colors.white,
+  },
+});
+
+export {Typography, Themes};

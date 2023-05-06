@@ -1,16 +1,17 @@
-import React, {Component} from 'react';
+import React, {useEffect, useState} from 'react';
 
 import {Buffer} from '@craftzdog/react-native-buffer';
 import {Button, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
-import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './rewheel/ble';
-import {inferBoardFromHardwareRevision} from './rewheel/board';
+import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
+import {inferBoardFromHardwareRevision} from './util/board';
+import {Typography} from './Typography';
 
 type SupportedBoards = 'XR' | 'Pint';
 
 const modes: {
   [board in SupportedBoards]: {
-    [mode: string]: {symbol: string; value: number};
+    [modeName: string]: {symbol: string; value: number};
   };
 } = {
   XR: {
@@ -33,20 +34,47 @@ interface Props {
   device?: PeripheralInfo;
 }
 
-interface State {
-  boardType: SupportedBoards;
-  setMode?: number;
-}
+const ModeSelection = ({device}: Props) => {
+  const [mode, setMode] = useState<Number | null>(null);
+  const [boardType, setBoardType] = useState<SupportedBoards>('Pint');
 
-class ModeSelection extends Component<Props, State> {
-  state: Readonly<State> = {
-    boardType: 'Pint',
-  };
-  componentDidMount(): void {
-    if (this.props.device != null) {
-      Promise.all([
+  /**
+   * Isses a bluetooth update to change the board to a given mode.
+   * See the `modes` const for different options per board.
+   * @param selection mode name to switch to
+   */
+  async function select(selection: string): Promise<void> {
+    if (boardType == null) {
+      throw new Error('Could not determine board type.');
+    }
+    const modeValue = modes[boardType][selection].value;
+    if (modeValue == null) {
+      throw new Error(`Unable to retrieve value for mode ${selection}`);
+    }
+    if (device == null) {
+      throw new Error('No connected device. (ModeSelection)');
+    }
+    try {
+      await BTManager.write(
+        device.id,
+        ONEWHEEL_SERVICE_UUID,
+        CHARACTERISTICS.rideMode,
+        [modeValue],
+      );
+      setMode(modeValue);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  useEffect(() => {
+    const getBoardInfo = async () => {
+      if (device?.id == null) {
+        throw new Error('No connected device. (getBoardInfo)');
+      }
+      return Promise.all([
         BTManager.read(
-          this.props.device.id,
+          device?.id,
           ONEWHEEL_SERVICE_UUID,
           CHARACTERISTICS.hardwareRevision,
         ).then((rhwr: number[]) => {
@@ -65,7 +93,7 @@ class ModeSelection extends Component<Props, State> {
           return boardType;
         }),
         BTManager.read(
-          this.props.device.id,
+          device?.id,
           ONEWHEEL_SERVICE_UUID,
           CHARACTERISTICS.rideMode,
         ).then(rMode => {
@@ -74,77 +102,41 @@ class ModeSelection extends Component<Props, State> {
           console.debug(`Current ride mode: ${currentMode}`);
           return currentMode;
         }),
-      ])
-        .then(([boardType, setMode]) => {
-          this.setState({
-            boardType,
-            setMode,
-          });
-        })
-        .catch(err => {
-          console.error(err);
-        });
-    }
-  }
+      ]);
+    };
 
-  /**
-   * Isses a bluetooth update to change the board to a given mode.
-   * See the `modes` const for different options per board.
-   * @param selection mode name to switch to
-   */
-  async select(selection: string): Promise<void> {
-    if (this.state.boardType == null) {
-      throw new Error('Could not determine board type.');
-    }
-    const modeValue = modes[this.state.boardType][selection].value;
-    if (modeValue == null) {
-      throw new Error(`Unable to retrieve value for mode ${selection}`);
-    }
-    const {device} = this.props;
-    if (device == null) {
-      throw new Error('No connected device.');
-    }
+    getBoardInfo()
+      .then(([readBoardType, readMode]) => {
+        setBoardType(readBoardType);
+        setMode(readMode);
+      })
+      .catch(err => console.error(err));
+  }, [device]);
 
-    await BTManager.write(
-      device.id,
-      ONEWHEEL_SERVICE_UUID,
-      CHARACTERISTICS.rideMode,
-      [modeValue],
-    ).catch(err => {
-      console.error(err);
-    });
-    this.setState({setMode: modeValue});
-  }
-
-  private wrapIfSelected(title: string, mode: number) {
-    if (this.state?.setMode === mode) {
+  function wrapIfSelected(title: string, modeOption: number) {
+    if (mode === modeOption) {
       return `>>> ${title} <<<`;
     }
     return title;
   }
 
-  render(): JSX.Element {
-    // Render mode selection based on OW generation.
-    return (
-      <View>
-        {Object.entries(modes[this.state.boardType]).map(
-          ([mode, {symbol, value}]) => (
-            <Button
-              title={this.wrapIfSelected(
-                `${symbol} ${mode[0].toUpperCase() + mode.slice(1)}`,
-                value,
-              )}
-              key={mode}
-              disabled={this.state?.setMode === value}
-              onPress={() => {
-                this.select(mode);
-              }}
-            />
-          ),
-        )}
-      </View>
-    );
-  }
-}
+  // Render mode selection based on OW generation.
+  return (
+    <View>
+      {Object.entries(modes[boardType]).map(([modeName, {symbol, value}]) => (
+        <Button
+          title={wrapIfSelected(
+            `${symbol} ${modeName[0].toUpperCase() + modeName.slice(1)}`,
+            value,
+          )}
+          key={modeName}
+          disabled={mode === value}
+          onPress={() => select(modeName).catch(err => console.error(err))}
+          color={Typography.colors.emerald}
+        />
+      ))}
+    </View>
+  );
+};
 
 export default ModeSelection;
