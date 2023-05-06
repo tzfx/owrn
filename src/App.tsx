@@ -42,7 +42,7 @@ const App = () => {
   const [connectedBoard, setConnectedBoard] = useState<SavedBoard | undefined>(
     undefined,
   );
-  const [savedBoards] = useState<SavedBoard[]>([]);
+  const [savedBoards, setSavedBoards] = useState<SavedBoard[]>([]);
 
   async function scan(deviceId?: string): Promise<PeripheralInfo[]> {
     try {
@@ -137,11 +137,21 @@ const App = () => {
   useEffect(() => {
     const init = async () => {
       const savedConfig = await StorageService.getAppConfig();
+      setSavedBoards((await StorageService.getSavedBoards()) ?? []);
       setConfig(savedConfig);
       console.debug('Got saved configuration ->', savedConfig);
       await BleManager.start({showAlert: true});
       console.debug('BT Initialized.');
       await new Promise(res => setTimeout(() => res(true), 100));
+      // Required for Android.
+      try {
+        await BleManager.enableBluetooth();
+      } catch (err) {
+        // Unsupported in iOS.
+        if (err !== 'Not supported') {
+          console.error(err);
+        }
+      }
       // Setup disconnection listener.
       BleManagerEmitter.addListener(
         'BleManagerDisconnectPeripheral',
@@ -181,15 +191,17 @@ const App = () => {
             ...theme,
           }}>
           {config != null ? (
-            <ConfigEditor
-              style={theme}
-              handleConfigUpdate={updated => {
-                StorageService.updateAppConfig(updated).then(() =>
-                  setConfig(updated),
-                );
-              }}
-              config={config}
-            />
+            <View style={{flex: 1}}>
+              <ConfigEditor
+                style={theme}
+                handleConfigUpdate={updated => {
+                  StorageService.updateAppConfig(updated).then(() =>
+                    setConfig(updated),
+                  );
+                }}
+                config={config}
+              />
+            </View>
           ) : (
             <></>
           )}
@@ -225,7 +237,6 @@ const App = () => {
               <ModeSelection device={connectedDevice} />
             </View>
           ) : (
-            // <ModeSelection device={this.state.connectedDevice} />
             <View style={styles.fullscreen}>
               <ConnectionStatus
                 style={{fontSize: Typography.fontsize.xxl}}
@@ -289,7 +300,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     fontSize: Typography.fontsize.xl,
   },
-  logo: {flex: 1, left: 40},
+  logo: {flex: 1},
   fullscreen: {
     marginTop: '5%',
     height: '100%',
