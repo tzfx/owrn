@@ -134,12 +134,14 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
               <FlatList
                 data={savedBoards}
                 renderItem={({item}) => (
-                  <Text>
-                    {[
-                      item.name,
-                      item.id.split(/.{4}-.{23}/).join('...'),
-                      item.autoconnect ? '🔗' : '',
-                    ].join(' : ')}
+                  <View style={{flexDirection: 'row'}}>
+                    <Text>
+                      {[
+                        item.name,
+                        item.id.split(/.{4}-.{23}/).join('...'),
+                        item.autoconnect ? '🔗' : '',
+                      ].join(' : ')}
+                    </Text>
                     <Button
                       title="Delete"
                       color={'red'}
@@ -151,7 +153,7 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
                         )
                       }
                     />
-                  </Text>
+                  </View>
                 )}
                 keyExtractor={item => item.id}
               />

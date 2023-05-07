@@ -6,6 +6,7 @@ import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
 import {inferBoardFromHardwareRevision} from './util/board';
 import {Typography} from './Typography';
+import CustomShaping from './CustomShaping';
 
 type SupportedBoards = 'XR' | 'Pint';
 
@@ -32,9 +33,10 @@ const modes: {
 
 interface Props {
   device?: PeripheralInfo;
+  debug?: boolean;
 }
 
-const ModeSelection = ({device}: Props) => {
+const ModeSelection = ({device, debug}: Props) => {
   const [mode, setMode] = useState<Number | null>(null);
   const [boardType, setBoardType] = useState<SupportedBoards>('Pint');
 
@@ -68,6 +70,10 @@ const ModeSelection = ({device}: Props) => {
   }
 
   useEffect(() => {
+    if (debug) {
+      setMode(9);
+    }
+
     const getBoardInfo = async () => {
       if (device?.id == null) {
         throw new Error('No connected device. (getBoardInfo)');
@@ -111,7 +117,7 @@ const ModeSelection = ({device}: Props) => {
         setMode(readMode);
       })
       .catch(err => console.error(err));
-  }, [device]);
+  }, [device, debug]);
 
   function wrapIfSelected(title: string, modeOption: number) {
     if (mode === modeOption) {
@@ -135,6 +141,7 @@ const ModeSelection = ({device}: Props) => {
           color={Typography.colors.emerald}
         />
       ))}
+      {mode === 9 && <CustomShaping />}
     </View>
   );
 };
