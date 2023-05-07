@@ -179,6 +179,18 @@ const App = () => {
     init().catch(err => console.error(err));
   }, []);
 
+  useEffect(() => {
+    if (config?.debug) {
+      setConnectedBoard({
+        id: '1234-5678',
+        name: 'debug-board',
+        topRPM: 1234,
+        autoconnect: true,
+        wheelSize: 10.5,
+      });
+    }
+  }, [config]);
+
   return (
     <SafeAreaView style={theme}>
       <StatusBar
@@ -293,14 +305,14 @@ const styles = StyleSheet.create({
   base: {
     fontFamily: Typography.nativeFonts,
   },
-  configButton: {flex: 1, paddingLeft: 20},
+  configButton: {flex: 1},
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     fontSize: Typography.fontsize.xl,
   },
-  logo: {flex: 1},
+  logo: {flex: 1, left: 10},
   fullscreen: {
     marginTop: '5%',
     height: '100%',
