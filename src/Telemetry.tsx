@@ -22,6 +22,8 @@ const Telemetry = ({board, device, config}: Props) => {
 
   const [metric, setMetric] = useState(false);
 
+  const [topRPM, setTopRPM] = useState(board?.topRPM ?? 0);
+
   const odometerPoller = useRef<number>();
   const rpmPoller = useRef<number>();
 
@@ -29,6 +31,7 @@ const Telemetry = ({board, device, config}: Props) => {
     return ((diameter * Math.PI * revs * 60) / (12 * 5_280)) * (km ? 1.609 : 1);
   }
   const speed = calculateSpeed(rpm, board?.wheelSize, metric);
+  const topSpeed = calculateSpeed(topRPM, board?.wheelSize, metric);
 
   function rotations2Distance(
     rotations: number,
@@ -110,10 +113,17 @@ const Telemetry = ({board, device, config}: Props) => {
   }, [device]);
 
   useEffect(() => {
-    if (board != null && speed > (board?.topSpeed ?? 0)) {
-      StorageService.saveBoard({...board, topSpeed: speed});
+    if (board != null) {
+      setTopRPM(board.topRPM ?? 0);
     }
-  }, [board, speed]);
+  }, [board]);
+
+  useEffect(() => {
+    if (board != null && rpm > (board.topRPM ?? 0)) {
+      setTopRPM(rpm);
+      StorageService.saveBoard({...board, topRPM: rpm});
+    }
+  }, [board, rpm]);
 
   useEffect(() => {
     setMetric(config?.speedUnit === 'KPH');
@@ -127,9 +137,7 @@ const Telemetry = ({board, device, config}: Props) => {
         startAngle={90}
         endAngle={270}
         innerRadius={75}
-        labels={({datum}) =>
-          datum.x === 'top' ? (board?.topSpeed ?? 0.0).toFixed(1) : ''
-        }
+        labels={({datum}) => (datum.x === 'top' ? topSpeed.toFixed(1) : '')}
         labelPlacement={'perpendicular'}
         labelPosition={'startAngle'}
         labelRadius={() => 130}
@@ -147,8 +155,8 @@ const Telemetry = ({board, device, config}: Props) => {
           },
         }}
         data={[
-          {x: '', y: 25.0 - (board?.topSpeed ?? 0)},
-          {x: 'top', y: board?.topSpeed ?? 0 - speed},
+          {x: '', y: (metric ? 40.0 : 25.0) - (topSpeed ?? 0)},
+          {x: 'top', y: topSpeed ?? 0 - speed},
           {x: 'speed', y: speed || 0.1},
         ]}
       />

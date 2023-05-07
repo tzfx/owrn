@@ -135,10 +135,14 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
                 data={savedBoards}
                 renderItem={({item}) => (
                   <Text>
-                    {item.name} : {item.id.split(/.{4}-.{23}/).join('...')}
-                    {item.autoconnect ? ' : autoconnect' : ''}
+                    {[
+                      item.name,
+                      item.id.split(/.{4}-.{23}/).join('...'),
+                      item.autoconnect ? '🔗' : '',
+                    ].join(' : ')}
                     <Button
-                      title="delete"
+                      title="Delete"
+                      color={'red'}
                       onPress={() =>
                         StorageService.removeBoard(item.id).then(() =>
                           setSavedBoards(
@@ -157,7 +161,7 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
           </View>
           <Button
             color={Typography.colors.emerald}
-            title="Save"
+            title="Done"
             onPress={() => setEditting(false)}
           />
         </SafeAreaView>

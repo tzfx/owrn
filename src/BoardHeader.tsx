@@ -48,7 +48,7 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
   }, [board]);
 
   return (
-    <View>
+    <SafeAreaView>
       <Modal animationType="slide" visible={editting}>
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalInput}>
@@ -99,29 +99,35 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
           </View>
         </SafeAreaView>
       </Modal>
-      <View style={styles.switchContainer}>
-        <View style={styles.editIcon}>
-          <Button title="✏️" onPress={() => setEditting(true)} />
-        </View>
+      <View style={styles.nameContainer}>
+        <View style={styles.flex1} />
         <Text style={styles.boardName}>
           {board?.name ?? connectedDevice?.name ?? connectedDevice?.id}
         </Text>
+        <View style={styles.flex1}>
+          <Button title="✏️" onPress={() => setEditting(true)} />
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
 export default BoardHeader;
 
 const styles = StyleSheet.create({
-  boardName: {
-    fontSize: Typography.fontsize.large,
-    marginLeft: 'auto',
-    marginRight: 'auto',
-    maxWidth: 500,
-    marginTop: -25,
+  nameContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    backgroundColor: Typography.colors.celadon,
+    width: '100%',
   },
-  editIcon: {top: -15, marginLeft: '-25%'},
+  boardName: {
+    fontSize: Typography.fontsize.medium * 1.5,
+    flex: 2,
+  },
+  flex1: {
+    flex: 1,
+  },
   flexRow: {
     flexDirection: 'row',
   },
