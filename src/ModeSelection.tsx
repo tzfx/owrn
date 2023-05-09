@@ -39,6 +39,7 @@ interface Props {
 const ModeSelection = ({device, debug}: Props) => {
   const [mode, setMode] = useState<Number | null>(null);
   const [boardType, setBoardType] = useState<SupportedBoards>('Pint');
+  const [isShapingOpen, setIsShapingOpen] = useState(false);
 
   /**
    * Isses a bluetooth update to change the board to a given mode.
@@ -129,19 +130,28 @@ const ModeSelection = ({device, debug}: Props) => {
   // Render mode selection based on OW generation.
   return (
     <View>
-      {Object.entries(modes[boardType]).map(([modeName, {symbol, value}]) => (
+      {Object.entries(modes[boardType])
+        .filter(([modeName]) => (isShapingOpen ? modeName === 'custom' : true))
+        .map(([modeName, {symbol, value}]) => (
+          <Button
+            title={wrapIfSelected(
+              `${symbol} ${modeName[0].toUpperCase() + modeName.slice(1)}`,
+              value,
+            )}
+            key={modeName}
+            disabled={mode === value}
+            onPress={() => select(modeName).catch(err => console.error(err))}
+            color={Typography.colors.emerald}
+          />
+        ))}
+      {mode === 9 && (
         <Button
-          title={wrapIfSelected(
-            `${symbol} ${modeName[0].toUpperCase() + modeName.slice(1)}`,
-            value,
-          )}
-          key={modeName}
-          disabled={mode === value}
-          onPress={() => select(modeName).catch(err => console.error(err))}
+          title={isShapingOpen ? 'Close Shaping' : 'Open Shaping'}
           color={Typography.colors.emerald}
+          onPress={() => setIsShapingOpen(!isShapingOpen)}
         />
-      ))}
-      {mode === 9 && <CustomShaping />}
+      )}
+      {isShapingOpen && <CustomShaping device={device}/>}
     </View>
   );
 };

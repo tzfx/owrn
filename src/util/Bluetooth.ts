@@ -120,3 +120,10 @@ export const characteristics = [
   {characteristic: 'serialRead', uuid: 'e659f3fe-ea98-11e3-ac10-0800200c9a66'},
   {characteristic: 'serialWrite', uuid: 'e659f3ff-ea98-11e3-ac10-0800200c9a66'},
 ];
+
+export const RIDE_TRAIT_VALUES = {
+  angleOffset: 0, // tilt
+  turnCompensation: 1, // flow
+  aggressiveness: 2, // fire
+  simpleStop: 3,
+};
