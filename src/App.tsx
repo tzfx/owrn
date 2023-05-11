@@ -271,9 +271,19 @@ const App = () => {
                   ConnectionState.CONNECTING,
                 ].some(v => v === connectionState)}
                 onPress={() => {
-                  scan().catch(err => {
-                    console.error(err);
-                  });
+                  scan()
+                    .then(async scanned => {
+                      const found = config?.autoconnect.find(id =>
+                        scanned.find(dev => dev.id === id),
+                      );
+                      if (found != null) {
+                        setConnectionState(ConnectionState.CONNECTING);
+                        await connect(found, scanned);
+                      }
+                    })
+                    .catch(err => {
+                      console.error(err);
+                    });
                 }}
               />
               {devices.map(dev => (
