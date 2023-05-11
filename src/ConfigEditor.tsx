@@ -43,18 +43,7 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
       <Pressable onPress={() => setEditting(true)}>
         <Text style={{fontSize: Typography.fontsize.xl}}>≡</Text>
       </Pressable>
-      <Modal
-        animationType="slide"
-        visible={editting}
-        onDismiss={() => {
-          handleConfigUpdate({
-            autoconnect: savedBoards.map(b => b.id),
-            debug,
-            speedUnit,
-            theme,
-            temperatureUnit,
-          });
-        }}>
+      <Modal animationType="slide" visible={editting}>
         <SafeAreaView style={styles.boxed}>
           <Text style={styles.h1}>User Options</Text>
           <View style={styles.optionRow}>
@@ -164,7 +153,16 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
           <Button
             color={Typography.colors.emerald}
             title="Done"
-            onPress={() => setEditting(false)}
+            onPress={() => {
+              setEditting(false);
+              handleConfigUpdate({
+                autoconnect: savedBoards.map(b => b.id),
+                debug,
+                speedUnit,
+                theme,
+                temperatureUnit,
+              });
+            }}
           />
         </SafeAreaView>
       </Modal>

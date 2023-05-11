@@ -8,6 +8,7 @@ import {Typography} from './Typography';
 import {
   Button,
   Modal,
+  Pressable,
   SafeAreaView,
   StyleSheet,
   Switch,
@@ -100,12 +101,35 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
         </SafeAreaView>
       </Modal>
       <View style={styles.nameContainer}>
-        <View style={styles.flex1} />
+        {/* <View style={styles.flex1} />
         <Text style={styles.boardName}>
           {board?.name ?? connectedDevice?.name ?? connectedDevice?.id}
-        </Text>
-        <View style={styles.flex1}>
-          <Button title="✏️" onPress={() => setEditting(true)} />
+        </Text> */}
+        <View
+          style={{
+            ...styles.flex1,
+            flexDirection: 'row',
+            justifyContent: 'center',
+            height: 45,
+          }}>
+          <Pressable style={{height: '100%'}} onPress={() => setEditting(true)}>
+            <Text
+              style={{
+                color: Typography.colors.white,
+                fontSize: Typography.fontsize.large,
+              }}>
+              {(board?.name ?? connectedDevice?.name ?? connectedDevice?.id) +
+                ' ⚙️'}
+            </Text>
+          </Pressable>
+          {/* <Button
+            color={Typography.colors.celadon}
+            title={
+              (board?.name ?? connectedDevice?.name ?? connectedDevice?.id) +
+              ' ⚙️'
+            }
+            onPress={() => setEditting(true)}
+          /> */}
         </View>
       </View>
     </SafeAreaView>
