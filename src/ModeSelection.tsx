@@ -6,6 +6,7 @@ import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
 import {inferBoardFromHardwareRevision} from './util/board';
 import {Typography} from './Typography';
+import CustomShaping from './CustomShaping';
 
 type SupportedBoards = 'XR' | 'Pint';
 
@@ -32,11 +33,13 @@ const modes: {
 
 interface Props {
   device?: PeripheralInfo;
+  debug?: boolean;
 }
 
-const ModeSelection = ({device}: Props) => {
+const ModeSelection = ({device, debug}: Props) => {
   const [mode, setMode] = useState<Number | null>(null);
   const [boardType, setBoardType] = useState<SupportedBoards>('Pint');
+  const [isShapingOpen, setIsShapingOpen] = useState(false);
 
   /**
    * Isses a bluetooth update to change the board to a given mode.
@@ -68,6 +71,10 @@ const ModeSelection = ({device}: Props) => {
   }
 
   useEffect(() => {
+    if (debug) {
+      setMode(9);
+    }
+
     const getBoardInfo = async () => {
       if (device?.id == null) {
         throw new Error('No connected device. (getBoardInfo)');
@@ -111,7 +118,7 @@ const ModeSelection = ({device}: Props) => {
         setMode(readMode);
       })
       .catch(err => console.error(err));
-  }, [device]);
+  }, [device, debug]);
 
   function wrapIfSelected(title: string, modeOption: number) {
     if (mode === modeOption) {
@@ -123,18 +130,28 @@ const ModeSelection = ({device}: Props) => {
   // Render mode selection based on OW generation.
   return (
     <View>
-      {Object.entries(modes[boardType]).map(([modeName, {symbol, value}]) => (
+      {Object.entries(modes[boardType])
+        .filter(([modeName]) => (isShapingOpen ? modeName === 'custom' : true))
+        .map(([modeName, {symbol, value}]) => (
+          <Button
+            title={wrapIfSelected(
+              `${symbol} ${modeName[0].toUpperCase() + modeName.slice(1)}`,
+              value,
+            )}
+            key={modeName}
+            disabled={mode === value}
+            onPress={() => select(modeName).catch(err => console.error(err))}
+            color={Typography.colors.emerald}
+          />
+        ))}
+      {isShapingOpen && <CustomShaping device={device} />}
+      {mode === 9 && (
         <Button
-          title={wrapIfSelected(
-            `${symbol} ${modeName[0].toUpperCase() + modeName.slice(1)}`,
-            value,
-          )}
-          key={modeName}
-          disabled={mode === value}
-          onPress={() => select(modeName).catch(err => console.error(err))}
+          title={isShapingOpen ? 'Close Shaping' : 'Open Shaping'}
           color={Typography.colors.emerald}
+          onPress={() => setIsShapingOpen(!isShapingOpen)}
         />
-      ))}
+      )}
     </View>
   );
 };

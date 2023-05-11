@@ -181,13 +181,14 @@ const App = () => {
 
   useEffect(() => {
     if (config?.debug) {
-      setConnectedBoard({
+      const debugBoard = {
         id: '1234-5678',
         name: 'debug-board',
-        topRPM: 1234,
+        topRPM: 500,
         autoconnect: true,
         wheelSize: 10.5,
-      });
+      };
+      setConnectedBoard(debugBoard);
     }
   }, [config]);
 
@@ -246,7 +247,7 @@ const App = () => {
                 board={connectedBoard}
                 device={connectedDevice}
               />
-              <ModeSelection device={connectedDevice} />
+              <ModeSelection device={connectedDevice} debug={config?.debug} />
             </View>
           ) : (
             <View style={styles.fullscreen}>
