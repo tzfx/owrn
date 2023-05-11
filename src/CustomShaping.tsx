@@ -13,14 +13,9 @@ const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 import {Buffer} from '@craftzdog/react-native-buffer';
 import {rescale} from './util/utils';
 
-export const SHAPING_LIMITS = {
-  min: 0,
-  max: 10,
-};
-
 export type ShapingOptionName = 'fire' | 'flow' | 'tilt';
 
-const shapingOptions: {
+export type ShapingOption = {
   name: ShapingOptionName;
   colors: {up: string; down: string};
   limits: {
@@ -28,7 +23,9 @@ const shapingOptions: {
     max: number;
     step: number;
   };
-}[] = [
+};
+
+const shapingOptions: ShapingOption[] = [
   {
     name: 'fire',
     colors: {up: '#e45221', down: '#8e452c'},
@@ -85,15 +82,18 @@ const CustomShaping = ({device}: Props) => {
                 bTrait.readInt8(0),
                 bTrait.readInt8(1),
               ];
+              console.debug(`Read Trait !! ${trait}: ${traitValue}`);
               switch (trait) {
-                case RIDE_TRAIT_VALUES.aggressiveness:
-                  setFire(Math.round(rescale(traitValue, -80, 127, 0, 10)));
+                case RIDE_TRAIT_VALUES.angleOffset: // 0
+                  setTilt(traitValue);
                   break;
-                case RIDE_TRAIT_VALUES.turnCompensation:
+                case RIDE_TRAIT_VALUES.turnCompensation: // 1
                   setFlow(Math.round(rescale(traitValue, -100, 100, 0, 10)));
                   break;
-                case RIDE_TRAIT_VALUES.angleOffset:
-                  setTilt(traitValue);
+                case RIDE_TRAIT_VALUES.aggressiveness: // 2
+                  setFire(Math.round(rescale(traitValue, -80, 127, 0, 10)));
+                  break;
+                case RIDE_TRAIT_VALUES.simpleStop: // 3
                   break;
                 default:
                   console.error(
@@ -118,6 +118,17 @@ const CustomShaping = ({device}: Props) => {
   async function handleModifier(option: ShapingOptionName, modifier: number) {
     if (device != null) {
       switch (option) {
+        case 'tilt':
+          await BTManager.write(
+            device.id,
+            ONEWHEEL_SERVICE_UUID,
+            CHARACTERISTICS.rideTrait,
+            [
+              RIDE_TRAIT_VALUES.angleOffset,
+              Math.round(tilt + modifier / -0.05),
+            ],
+          );
+          break;
         case 'fire':
           await BTManager.write(
             device.id,
@@ -128,7 +139,6 @@ const CustomShaping = ({device}: Props) => {
               Math.round(rescale(fire + modifier, 0, 10, -80, 127)),
             ],
           );
-          setFire(fire + modifier);
           break;
         case 'flow':
           await BTManager.write(
@@ -140,19 +150,6 @@ const CustomShaping = ({device}: Props) => {
               Math.round(rescale(flow + modifier, 0, 10, -100, 100)),
             ],
           );
-          setFlow(flow + modifier);
-          break;
-        case 'tilt':
-          await BTManager.write(
-            device.id,
-            ONEWHEEL_SERVICE_UUID,
-            CHARACTERISTICS.rideTrait,
-            [
-              RIDE_TRAIT_VALUES.angleOffset,
-              Math.round(tilt + modifier / -0.05),
-            ],
-          );
-          setTilt(tilt + modifier);
           break;
       }
     }
@@ -165,10 +162,10 @@ const CustomShaping = ({device}: Props) => {
           <ShapingToggle
             key={option.name}
             value={
-              option.name === 'fire'
+              option.name === 'tilt'
+                ? tilt
+                : option.name === 'fire'
                 ? fire
-                : option.name === 'flow'
-                ? flow
                 : tilt
             }
             handleModifier={handleModifier}

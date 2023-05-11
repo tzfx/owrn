@@ -1,12 +1,7 @@
 import React from 'react';
 import {View, Button, Text, StyleSheet} from 'react-native';
 import {Typography} from './Typography';
-import {ShapingOptionName, SHAPING_LIMITS} from './CustomShaping';
-
-type ShapingOption = {
-  name: ShapingOptionName;
-  colors: {up: string; down: string};
-};
+import {ShapingOptionName, ShapingOption} from './CustomShaping';
 
 type Props = {
   option: ShapingOption;
@@ -26,10 +21,10 @@ const ShapingToggle = ({option, value, handleModifier}: Props) => {
           backgroundColor: option.colors.up,
         }}>
         <Button
-          disabled={value === SHAPING_LIMITS.max}
+          disabled={value === option.limits.max}
           color={Typography.colors.white}
           title="MORE"
-          onPress={() => handleModifier(option.name, 1)}
+          onPress={() => handleModifier(option.name, option.limits.step)}
         />
       </View>
       <View
@@ -38,10 +33,10 @@ const ShapingToggle = ({option, value, handleModifier}: Props) => {
           backgroundColor: option.colors.down,
         }}>
         <Button
-          disabled={value === SHAPING_LIMITS.min}
+          disabled={value === option.limits.min}
           color={Typography.colors.white}
           title="LESS"
-          onPress={() => handleModifier(option.name, -1)}
+          onPress={() => handleModifier(option.name, -1 * option.limits.step)}
         />
       </View>
     </View>

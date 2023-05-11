@@ -41,5 +41,5 @@ export const inferBoardFromUpdateFile = (filename: string) => {
   const firmwareRevision = filename
     .substring(filename.indexOf(key) + key.length)
     .replace('.bin', '');
-  return inferBoardFromFirmwareRevision(parseInt(firmwareRevision));
+  return inferBoardFromFirmwareRevision(parseInt(firmwareRevision, 10));
 };
