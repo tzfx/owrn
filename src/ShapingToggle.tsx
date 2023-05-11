@@ -11,9 +11,18 @@ type Props = {
 
 const ShapingToggle = ({option, value, handleModifier}: Props) => {
   return (
-    <View style={style.flexcol}>
-      <Text>
-        {option.name} : {value}
+    <View
+      // eslint-disable-next-line react-native/no-inline-styles
+      style={{
+        ...style.flexcol,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        borderColor: option.colors.label,
+        borderWidth: StyleSheet.hairlineWidth,
+        backgroundColor: option.colors.label,
+      }}>
+      <Text style={{marginVertical: 10}}>
+        {option.emoji ?? option.name} : {value}
       </Text>
       <View
         style={{
@@ -23,7 +32,7 @@ const ShapingToggle = ({option, value, handleModifier}: Props) => {
         <Button
           disabled={value === option.limits.max}
           color={Typography.colors.white}
-          title="MORE"
+          title="＋"
           onPress={() => handleModifier(option.name, option.limits.step)}
         />
       </View>
@@ -35,7 +44,7 @@ const ShapingToggle = ({option, value, handleModifier}: Props) => {
         <Button
           disabled={value === option.limits.min}
           color={Typography.colors.white}
-          title="LESS"
+          title="−"
           onPress={() => handleModifier(option.name, -1 * option.limits.step)}
         />
       </View>
@@ -44,10 +53,11 @@ const ShapingToggle = ({option, value, handleModifier}: Props) => {
 };
 
 const style = StyleSheet.create({
-  flexcol: {flex: 1, flexDirection: 'column'},
+  flexcol: {flex: 1, flexDirection: 'column', alignItems: 'center'},
   button: {
+    width: '100%',
     paddingVertical: 5,
-    marginHorizontal: 2,
+    marginHorizontal: 5,
   },
 });
 

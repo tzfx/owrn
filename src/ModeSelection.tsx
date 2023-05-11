@@ -144,6 +144,7 @@ const ModeSelection = ({device, debug}: Props) => {
             color={Typography.colors.emerald}
           />
         ))}
+      {isShapingOpen && <CustomShaping device={device} />}
       {mode === 9 && (
         <Button
           title={isShapingOpen ? 'Close Shaping' : 'Open Shaping'}
@@ -151,7 +152,6 @@ const ModeSelection = ({device, debug}: Props) => {
           onPress={() => setIsShapingOpen(!isShapingOpen)}
         />
       )}
-      {isShapingOpen && <CustomShaping device={device}/>}
     </View>
   );
 };

@@ -17,7 +17,8 @@ export type ShapingOptionName = 'fire' | 'flow' | 'tilt';
 
 export type ShapingOption = {
   name: ShapingOptionName;
-  colors: {up: string; down: string};
+  emoji: string;
+  colors: {up: string; down: string; label: string};
   limits: {
     min: number;
     max: number;
@@ -28,7 +29,8 @@ export type ShapingOption = {
 const shapingOptions: ShapingOption[] = [
   {
     name: 'fire',
-    colors: {up: '#e45221', down: '#8e452c'},
+    emoji: '🔥',
+    colors: {up: '#e45221', down: '#8e452c', label: '#E2B1A1'},
     limits: {
       min: 0,
       max: 10,
@@ -37,7 +39,8 @@ const shapingOptions: ShapingOption[] = [
   },
   {
     name: 'flow',
-    colors: {up: '#9DC6E1', down: '#6a8596'},
+    emoji: '🌊',
+    colors: {up: '#9DC6E1', down: '#6a8596', label: '#E0EDF5'},
     limits: {
       min: 0,
       max: 10,
@@ -46,7 +49,8 @@ const shapingOptions: ShapingOption[] = [
   },
   {
     name: 'tilt',
-    colors: {up: '#000', down: 'grey'},
+    emoji: '⚖️',
+    colors: {up: '#000', down: 'grey', label: '#DFE1E2'},
     limits: {
       min: -1.5,
       max: 3,
