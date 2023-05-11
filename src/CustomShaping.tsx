@@ -89,7 +89,7 @@ const CustomShaping = ({device}: Props) => {
               console.debug(`Read Trait !! ${trait}: ${traitValue}`);
               switch (trait) {
                 case RIDE_TRAIT_VALUES.angleOffset: // 0
-                  setTilt(traitValue);
+                  setTilt(+(traitValue / -20).toFixed(1));
                   break;
                 case RIDE_TRAIT_VALUES.turnCompensation: // 1
                   setFlow(Math.round(rescale(traitValue, -100, 100, 0, 10)));
@@ -129,7 +129,7 @@ const CustomShaping = ({device}: Props) => {
             CHARACTERISTICS.rideTrait,
             [
               RIDE_TRAIT_VALUES.angleOffset,
-              Math.round(tilt + modifier / -0.05),
+              Math.round(-20 * (tilt + modifier)),
             ],
           );
           break;
@@ -170,7 +170,7 @@ const CustomShaping = ({device}: Props) => {
                 ? tilt
                 : option.name === 'fire'
                 ? fire
-                : tilt
+                : flow
             }
             handleModifier={handleModifier}
             option={option}
