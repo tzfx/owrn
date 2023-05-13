@@ -1,12 +1,12 @@
 import React, {useEffect, useState} from 'react';
 
 import {Buffer} from '@craftzdog/react-native-buffer';
-import {Button, View} from 'react-native';
+import {Pressable, Text, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
+import CustomShaping from './CustomShaping';
+import {Typography} from './Typography';
 import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
 import {inferBoardFromHardwareRevision} from './util/board';
-import {Typography} from './Typography';
-import CustomShaping from './CustomShaping';
 
 type SupportedBoards = 'XR' | 'Pint';
 
@@ -130,27 +130,56 @@ const ModeSelection = ({device, debug}: Props) => {
   // Render mode selection based on OW generation.
   return (
     <View>
-      {Object.entries(modes[boardType])
-        .filter(([modeName]) => (isShapingOpen ? modeName === 'custom' : true))
-        .map(([modeName, {symbol, value}]) => (
-          <Button
-            title={wrapIfSelected(
-              `${symbol} ${modeName[0].toUpperCase() + modeName.slice(1)}`,
-              value,
-            )}
-            key={modeName}
-            disabled={mode === value}
-            onPress={() => select(modeName).catch(err => console.error(err))}
-            color={Typography.colors.emerald}
-          />
-        ))}
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+        {Object.entries(modes[boardType])
+          .filter(([modeName]) =>
+            isShapingOpen ? modeName === 'custom' : true,
+          )
+          .map(([modeName, {symbol, value}]) => (
+            <Pressable
+              key={modeName}
+              disabled={mode === value}
+              onPress={() => select(modeName).catch(err => console.error(err))}>
+              <Text
+                style={{
+                  fontSize: Typography.fontsize.medium,
+                  color: mode === value ? 'grey' : Typography.colors.emerald,
+                  paddingVertical: 10,
+                  paddingHorizontal: 20,
+                  textAlign: 'center',
+                }}>
+                {wrapIfSelected(
+                  `${symbol} ${modeName[0].toUpperCase() + modeName.slice(1)}`,
+                  value,
+                )}
+              </Text>
+            </Pressable>
+          ))}
+      </View>
       {isShapingOpen && <CustomShaping device={device} />}
       {mode === 9 && (
-        <Button
-          title={isShapingOpen ? 'Close Shaping' : 'Open Shaping'}
-          color={Typography.colors.emerald}
-          onPress={() => setIsShapingOpen(!isShapingOpen)}
-        />
+        <Pressable
+          style={{
+            marginTop: 10,
+            backgroundColor: Typography.colors.emerald,
+            paddingVertical: 10,
+          }}
+          onPress={() => setIsShapingOpen(!isShapingOpen)}>
+          <Text
+            style={{
+              fontSize: Typography.fontsize.small,
+              color: Typography.colors.white,
+              textAlign: 'center',
+            }}>
+            {isShapingOpen ? 'Close Shaping' : 'Open Shaping'}
+          </Text>
+        </Pressable>
       )}
     </View>
   );

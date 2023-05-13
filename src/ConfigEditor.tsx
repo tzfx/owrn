@@ -150,20 +150,35 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
               <Text>No saved boards.</Text>
             )}
           </View>
-          <Button
-            color={Typography.colors.emerald}
-            title="Done"
-            onPress={() => {
-              setEditting(false);
-              handleConfigUpdate({
-                autoconnect: savedBoards.map(b => b.id),
-                debug,
-                speedUnit,
-                theme,
-                temperatureUnit,
-              });
-            }}
-          />
+          <View
+            style={{
+              borderBottomWidth: StyleSheet.hairlineWidth,
+              marginVertical: 20,
+            }}></View>
+          <View style={{flexDirection: 'row', justifyContent: 'flex-end'}}>
+            <Pressable
+              style={{
+                width: 75,
+                backgroundColor: Typography.colors.emerald,
+                paddingVertical: 10,
+                paddingHorizontal: 20,
+              }}
+              onPress={() => {
+                setEditting(false);
+                handleConfigUpdate({
+                  autoconnect: savedBoards.map(b => b.id),
+                  debug,
+                  speedUnit,
+                  theme,
+                  temperatureUnit,
+                });
+              }}>
+              <Text
+                style={{color: Typography.colors.white, textAlign: 'center'}}>
+                Done
+              </Text>
+            </Pressable>
+          </View>
         </SafeAreaView>
       </Modal>
     </View>
@@ -180,12 +195,12 @@ const styles = StyleSheet.create({
   selected: {
     backgroundColor: Typography.colors.emerald,
     color: Typography.colors.white,
-    paddingHorizontal: 10,
-    paddingVertical: 2.5,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
   },
   deselected: {
-    paddingHorizontal: 10,
-    paddingVertical: 2.5,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
   },
   optionRow: {
     flexDirection: 'row',
