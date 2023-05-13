@@ -5,6 +5,8 @@ import {
   Button,
   NativeEventEmitter,
   NativeModules,
+  PermissionsAndroid,
+  Platform,
   SafeAreaView,
   StatusBar,
   StyleSheet,
@@ -17,12 +19,12 @@ import BleManager, {PeripheralInfo} from 'react-native-ble-manager';
 import Battery from './Battery';
 import BoardHeader from './BoardHeader';
 import ConfigEditor from './ConfigEditor';
-import {ConnectionState} from './util/ConnectionState';
 import ConnectionStatus from './ConnectionStatus';
 import ModeSelection from './ModeSelection';
 import {AppConfig, SavedBoard, StorageService} from './StorageService';
 import Telemetry from './Telemetry';
 import {Themes, Typography} from './Typography';
+import {ConnectionState} from './util/ConnectionState';
 
 import {ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
 const BleManagerModule = NativeModules.BleManager;
@@ -140,16 +142,28 @@ const App = () => {
       setSavedBoards((await StorageService.getSavedBoards()) ?? []);
       setConfig(savedConfig);
       console.debug('Got saved configuration ->', savedConfig);
+      const platform = Platform.OS;
+      if (platform === 'android') {
+        try {
+          // Android BT setup for SDK>23:
+          await PermissionsAndroid.requestMultiple([
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+          ]);
+        } catch (_err) {} // FIX: Handle if the user denies.
+      }
       await BleManager.start({showAlert: true});
       console.debug('BT Initialized.');
       await new Promise(res => setTimeout(() => res(true), 100));
-      // Required for Android.
-      try {
-        await BleManager.enableBluetooth();
-      } catch (err) {
-        // Unsupported in iOS.
-        if (err !== 'Not supported') {
-          console.error(err);
+      if (platform === 'android') {
+        // Required for Android.
+        try {
+          await BleManager.enableBluetooth();
+        } catch (err) {
+          // Unsupported in iOS.
+          if (err !== 'Not supported') {
+            console.error(err);
+          }
         }
       }
       // Setup disconnection listener.
