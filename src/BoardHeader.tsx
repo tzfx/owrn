@@ -6,8 +6,8 @@ import {SavedBoard, StorageService} from './StorageService';
 import {useEffect, useState} from 'react';
 import {Typography} from './Typography';
 import {
-  Button,
   Modal,
+  Pressable,
   SafeAreaView,
   StyleSheet,
   Switch,
@@ -48,9 +48,18 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
   }, [board]);
 
   return (
-    <SafeAreaView>
+    <View>
       <Modal animationType="slide" visible={editting}>
         <SafeAreaView style={styles.modalContainer}>
+          <View>
+            <Text
+              style={{
+                fontSize: Typography.fontsize.medium,
+                fontWeight: '600',
+              }}>
+              Board Configuration
+            </Text>
+          </View>
           <View style={styles.modalInput}>
             <Text style={styles.modalInputLabel}>Board Name</Text>
             <TextInput
@@ -78,15 +87,29 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
                 value={autoconnect}
               />
             </View>
-            <View style={styles.flexRow}>
-              <Button
-                color={'grey'}
-                title="Cancel"
+            <View
+              style={{
+                width: '100%',
+                borderBottomWidth: StyleSheet.hairlineWidth,
+                marginVertical: 20,
+              }}></View>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'flex-end',
+                width: '100%',
+              }}>
+              <Pressable
                 onPress={() => setEditting(false)}
-              />
-              <Button
-                title="Save"
-                color={Typography.colors.emerald}
+                style={{
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                }}>
+                <Text style={{color: Typography.colors.davys_grey}}>
+                  Cancel
+                </Text>
+              </Pressable>
+              <Pressable
                 onPress={() => {
                   if (connectedDevice) {
                     saveBoard(connectedDevice.id).finally(() =>
@@ -94,21 +117,38 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
                     );
                   }
                 }}
-              />
+                style={{
+                  backgroundColor: Typography.colors.emerald,
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                  marginLeft: 10,
+                }}>
+                <Text style={{color: Typography.colors.white}}>Save</Text>
+              </Pressable>
             </View>
           </View>
         </SafeAreaView>
       </Modal>
       <View style={styles.nameContainer}>
-        <View style={styles.flex1} />
-        <Text style={styles.boardName}>
-          {board?.name ?? connectedDevice?.name ?? connectedDevice?.id}
-        </Text>
-        <View style={styles.flex1}>
-          <Button title="✏️" onPress={() => setEditting(true)} />
-        </View>
+        <Pressable
+          style={{
+            backgroundColor: Typography.colors.emerald,
+            width: '100%',
+            paddingVertical: 5,
+          }}
+          onPress={() => setEditting(true)}>
+          <Text
+            style={{
+              textAlign: 'center',
+              color: Typography.colors.white,
+              fontSize: Typography.fontsize.large * 0.85,
+            }}>
+            {(board?.name ?? connectedDevice?.name ?? connectedDevice?.id) +
+              ' ⚙️'}
+          </Text>
+        </Pressable>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -117,9 +157,7 @@ export default BoardHeader;
 const styles = StyleSheet.create({
   nameContainer: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    backgroundColor: Typography.colors.celadon,
-    width: '100%',
+    justifyContent: 'center',
   },
   boardName: {
     fontSize: Typography.fontsize.medium * 1.5,
@@ -132,6 +170,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   modalContainer: {
+    margin: 30,
     flexDirection: 'column',
     height: '100%',
   },
