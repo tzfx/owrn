@@ -146,10 +146,14 @@ const App = () => {
       if (platform === 'android') {
         try {
           // Android BT setup for SDK>23:
-          await PermissionsAndroid.requestMultiple([
+          const PERM_REQS = await PermissionsAndroid.requestMultiple([
             PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
             PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
           ]);
+          console.debug('BT Permissions Requested (Android)', PERM_REQS);
         } catch (_err) {} // FIX: Handle if the user denies.
       }
       await BleManager.start({showAlert: true});
@@ -159,6 +163,7 @@ const App = () => {
         // Required for Android.
         try {
           await BleManager.enableBluetooth();
+          console.debug('BT Enabled (Android)');
         } catch (err) {
           // Unsupported in iOS.
           if (err !== 'Not supported') {
