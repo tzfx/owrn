@@ -154,6 +154,17 @@ const App = () => {
             PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
           ]);
           console.debug('BT Permissions Requested (Android)', PERM_REQS);
+          const denied = Object.entries(PERM_REQS).filter(
+            ([_, v]) => v !== 'granted',
+          );
+          if (denied.length > 0) {
+            return Alert.alert(
+              'Missing Permissions',
+              `The following permissions need to be granted in order for bluetooth to work: \n${denied.map(
+                ([k]) => `- ${k}\n`,
+              )}\nPlease review and allow these permissions in Settings.`,
+            );
+          }
         } catch (_err) {} // FIX: Handle if the user denies.
       }
       await BleManager.start({showAlert: true});

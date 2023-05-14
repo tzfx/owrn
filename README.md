@@ -51,7 +51,7 @@ Make sure you have the following installed:
 
 #### 🔥 Hot Tips
 
-- Hot Tip: If things aren't compiling right, try to reinstall the react native to ios components with: `cd ios && pod install`.
+- Hot Tip #1: If things aren't compiling right, try to reinstall the react native to ios components with: `cd ios && pod install`.
 - Hot Tip #2: If xcode refuses to open when you do `npm run ios`, try `xed -b ios`. This should load the right workspace.
 - Hot Tip #3: There are two schema in the xcode workspace, `owrn` and `owrn - Release`. The first one is appropriate for development and debugging, the second one is what you want to use to actually use the application on your phone, in a production capacity.
 
@@ -66,6 +66,13 @@ Make sure you have the following installed:
 - The latest Android sdk: `sdkmanager --install 'platform;android-33'`
 - For sim support, an android system image & g_apis package for your arch: `sdkmanager --install 'system-images;android-33;google_apis;arm64-v8a'`
 
+#### 🔥 Hot Tips for on-device Debugging.
+
+- Hot Tip #1: You can make sure that your phone is connected via `adb devices -l`
+- Hot Tip #2: If it isn't there, make sure you [enable developer mode](https://developer.android.com/studio/debug/dev-options) on the phone.
+- Hot Tip #3: If it *still* isn't there, make sure you enable USB Debugging via **Settings > System > Advanced > Developer Options > USB debugging**
+- Hot Tip #4: Permissions are WHACK. If your scanner isn't showing up any devices (or you get the permissions alert), make sure Precise Location is enabled for owrn in system settings.
+- Hot Tip #5: You can build a production artefact and get it on your phone by doing `npm run android -- --mode=release`. This will strip out debug logging and the dependency on metro.
 
 ### 📲 Connection Troubleshooting
 
