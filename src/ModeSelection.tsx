@@ -8,18 +8,19 @@ import {Typography} from './Typography';
 import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
 import {inferBoardFromHardwareRevision} from './util/board';
 
-type SupportedBoards = 'XR' | 'Pint';
+type SupportedBoards = 'GT' | 'Pint' | 'PintX' | 'XR';
 
 const modes: {
   [board in SupportedBoards]: {
     [modeName: string]: {symbol: string; value: number};
   };
 } = {
-  XR: {
-    sequoia: {symbol: '🌳', value: 0x04},
-    cruz: {symbol: '🚢', value: 0x05},
-    mission: {symbol: '🛕', value: 0x06},
-    delirium: {symbol: '😵‍💫', value: 0x08},
+  GT: {
+    roam: {symbol: '🌳', value: 0x04},
+    flow: {symbol: '🌊', value: 0x05},
+    highline: {symbol: '🚠', value: 0x06},
+    elevated: {symbol: '⛰️', value: 0x07},
+    apex: {symbol: '📈', value: 0x08},
     custom: {symbol: '🧰', value: 0x09},
   },
   Pint: {
@@ -27,6 +28,20 @@ const modes: {
     pacific: {symbol: '🌊', value: 0x06},
     elevated: {symbol: '⛰️', value: 0x07},
     skyline: {symbol: '🏙️', value: 0x08},
+    custom: {symbol: '🧰', value: 0x09},
+  },
+  PintX: {
+    redwood_x: {symbol: '🌳', value: 0x05},
+    pacific_x: {symbol: '🌊', value: 0x06},
+    elevated_x: {symbol: '⛰️', value: 0x07},
+    skyline_x: {symbol: '🏙️', value: 0x08},
+    custom_x: {symbol: '🧰', value: 0x09},
+  },
+  XR: {
+    sequoia: {symbol: '🌳', value: 0x04},
+    cruz: {symbol: '🚢', value: 0x05},
+    mission: {symbol: '🛕', value: 0x06},
+    delirium: {symbol: '😵‍💫', value: 0x08},
     custom: {symbol: '🧰', value: 0x09},
   },
 };
@@ -87,17 +102,17 @@ const ModeSelection = ({device, debug}: Props) => {
         ).then((rhwr: number[]) => {
           const bhwr = Buffer.from(rhwr);
           const hwRevision = bhwr.readUInt16BE(0);
-          const boardType = inferBoardFromHardwareRevision(
+          const inferred = inferBoardFromHardwareRevision(
             hwRevision,
           ) as SupportedBoards;
           // type guard.
-          if (['XR', 'Pint'].every(t => t !== boardType)) {
-            throw new Error(`Unsupported board type found:  ${boardType}`);
+          if (['GT', 'XR', 'Pint', 'PintX'].every(t => t !== inferred)) {
+            throw new Error(`Unsupported board type found:  ${inferred}`);
           }
           console.debug(
-            `Retrieved board hardware revision: ${hwRevision} (${boardType})`,
+            `Retrieved board hardware revision: ${hwRevision} (${inferred})`,
           );
-          return boardType;
+          return inferred;
         }),
         BTManager.read(
           device?.id,
