@@ -154,7 +154,8 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
             style={{
               borderBottomWidth: StyleSheet.hairlineWidth,
               marginVertical: 20,
-            }}></View>
+            }}
+          />
           <View style={{flexDirection: 'row', justifyContent: 'flex-end'}}>
             <Pressable
               style={{

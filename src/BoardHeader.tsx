@@ -92,7 +92,8 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
                 width: '100%',
                 borderBottomWidth: StyleSheet.hairlineWidth,
                 marginVertical: 20,
-              }}></View>
+              }}
+            />
             <View
               style={{
                 flexDirection: 'row',
