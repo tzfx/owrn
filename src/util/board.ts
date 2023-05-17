@@ -1,3 +1,5 @@
+import {SupportedGeneration} from '../StorageService';
+
 export const BoardGeneration = {
   V1: 1,
   V1_2: 2,
@@ -6,6 +8,13 @@ export const BoardGeneration = {
   Pint: 5,
   GT: 6,
   PintX: 7,
+};
+
+export const GenerationName = {
+  4: 'XR',
+  5: 'Pint',
+  6: 'GT',
+  7: 'PintX',
 };
 
 export type BoardGenerationName =
@@ -44,7 +53,11 @@ export const getRevisionInformation = (revision: number) => {
 };
 
 export const inferBoardFromHardwareRevision = (revision: number) => {
-  const generation = Math.floor(revision / 1000);
+  const generation = inferGenerationFromHardwareRevision(revision);
 
   return Object.keys(BoardGeneration)[generation - 1] as BoardGenerationName;
+};
+
+export const inferGenerationFromHardwareRevision = (revision: number) => {
+  return Math.floor(revision / 1000) as SupportedGeneration;
 };

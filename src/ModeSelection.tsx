@@ -6,7 +6,7 @@ import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import CustomShaping from './CustomShaping';
 import {Typography} from './Typography';
 import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
-import {inferBoardFromHardwareRevision} from './util/board';
+import {SavedBoard} from './StorageService';
 
 type SupportedBoards = 'GT' | 'Pint' | 'PintX' | 'XR';
 
@@ -48,13 +48,16 @@ const modes: {
 
 interface Props {
   device?: PeripheralInfo;
+  board?: SavedBoard;
   debug?: boolean;
 }
 
-const ModeSelection = ({device, debug}: Props) => {
+const ModeSelection = ({device, board, debug}: Props) => {
   const [mode, setMode] = useState<Number | null>(null);
-  const [boardType, setBoardType] = useState<SupportedBoards>('Pint');
   const [isShapingOpen, setIsShapingOpen] = useState(false);
+
+  const boardType = board?.generation === 5 ? 'Pint' : 'XR';
+  console.debug('gen ->', board?.generation);
 
   /**
    * Isses a bluetooth update to change the board to a given mode.
@@ -62,7 +65,7 @@ const ModeSelection = ({device, debug}: Props) => {
    * @param selection mode name to switch to
    */
   async function select(selection: string): Promise<void> {
-    if (boardType == null) {
+    if (board == null) {
       throw new Error('Could not determine board type.');
     }
     const modeValue = modes[boardType][selection].value;
@@ -94,42 +97,19 @@ const ModeSelection = ({device, debug}: Props) => {
       if (device?.id == null) {
         throw new Error('No connected device. (getBoardInfo)');
       }
-      return Promise.all([
-        BTManager.read(
-          device?.id,
-          ONEWHEEL_SERVICE_UUID,
-          CHARACTERISTICS.hardwareRevision,
-        ).then((rhwr: number[]) => {
-          const bhwr = Buffer.from(rhwr);
-          const hwRevision = bhwr.readUInt16BE(0);
-          const inferred = inferBoardFromHardwareRevision(
-            hwRevision,
-          ) as SupportedBoards;
-          // type guard.
-          if (['GT', 'XR', 'Pint', 'PintX'].every(t => t !== inferred)) {
-            throw new Error(`Unsupported board type found:  ${inferred}`);
-          }
-          console.debug(
-            `Retrieved board hardware revision: ${hwRevision} (${inferred})`,
-          );
-          return inferred;
-        }),
-        BTManager.read(
-          device?.id,
-          ONEWHEEL_SERVICE_UUID,
-          CHARACTERISTICS.rideMode,
-        ).then(rMode => {
-          const bMode = Buffer.from(rMode);
-          const currentMode = bMode.readUInt8(1);
-          console.debug(`Current ride mode: ${currentMode}`);
-          return currentMode;
-        }),
-      ]);
+      const rMode = await BTManager.read(
+        device?.id,
+        ONEWHEEL_SERVICE_UUID,
+        CHARACTERISTICS.rideMode,
+      );
+      const bMode = Buffer.from(rMode);
+      const currentMode = bMode.readUInt8(1);
+      console.debug(`Current ride mode: ${currentMode}`);
+      return currentMode;
     };
 
     getBoardInfo()
-      .then(([readBoardType, readMode]) => {
-        setBoardType(readBoardType);
+      .then(readMode => {
         setMode(readMode);
       })
       .catch(err => console.error(err));

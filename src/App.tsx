@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 
 import BleManager, {PeripheralInfo} from 'react-native-ble-manager';
+import {Buffer} from '@craftzdog/react-native-buffer';
 
 import Battery from './Battery';
 import BoardHeader from './BoardHeader';
@@ -26,7 +27,8 @@ import Telemetry from './Telemetry';
 import {Themes, Typography} from './Typography';
 import {ConnectionState} from './util/ConnectionState';
 
-import {ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
+import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
+import {inferGenerationFromHardwareRevision} from './util/board';
 const BleManagerModule = NativeModules.BleManager;
 const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
@@ -109,8 +111,17 @@ const App = () => {
         b => b.id === deviceId,
       );
       if (!found) {
+        const rhwr = await BleManager.read(
+          deviceId,
+          ONEWHEEL_SERVICE_UUID,
+          CHARACTERISTICS.hardwareRevision,
+        );
+        const bhwr = Buffer.from(rhwr);
+        const hwRevision = bhwr.readUInt16BE(0);
+        const generation = inferGenerationFromHardwareRevision(hwRevision);
         found = {
           id: deviceId,
+          generation,
           name: deviceId,
           autoconnect: true,
           wheelSize: 10.5, // @fixme: Determine wheel size based on board generation.
@@ -214,10 +225,11 @@ const App = () => {
       const debugBoard = {
         id: '1234-5678',
         name: 'debug-board',
+        generation: 5, // pint
         topRPM: 500,
         autoconnect: true,
         wheelSize: 10.5,
-      };
+      } as SavedBoard;
       setConnectedBoard(debugBoard);
     }
   }, [config]);
@@ -277,7 +289,11 @@ const App = () => {
                 board={connectedBoard}
                 device={connectedDevice}
               />
-              <ModeSelection device={connectedDevice} debug={config?.debug} />
+              <ModeSelection
+                board={connectedBoard}
+                device={connectedDevice}
+                debug={config?.debug}
+              />
             </View>
           ) : (
             <View style={styles.fullscreen}>

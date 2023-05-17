@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import {PeripheralInfo} from 'react-native-ble-manager';
 
-import {SavedBoard, StorageService} from './StorageService';
+import {STOCK_WHEEL_SIZES, SavedBoard, StorageService} from './StorageService';
 import {useEffect, useState} from 'react';
 import {Typography} from './Typography';
 import {
@@ -15,6 +15,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import {GenerationName} from './util/board';
 
 type Props = {
   connectedDevice?: PeripheralInfo;
@@ -28,12 +29,15 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
   const [formBoardname, setFormBoardname] = useState(board?.name);
   const [formWheelsize, setFormWheelsize] = useState(board?.wheelSize ?? 10.5);
 
+  const generationName = GenerationName[board?.generation ?? 5];
+
   async function saveBoard(id: string, newAutoconnect: boolean = autoconnect) {
-    const updated = {
+    const updated: SavedBoard = {
       id,
       name: formBoardname ?? id,
+      generation: board?.generation ?? 5,
       autoconnect: newAutoconnect,
-      wheelSize: +(formWheelsize ?? 10.5),
+      wheelSize: +(formWheelsize ?? STOCK_WHEEL_SIZES[board?.generation ?? 5]),
     };
     await StorageService.saveBoard(updated);
     return handleSave(updated);
@@ -145,7 +149,7 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
               fontSize: Typography.fontsize.large * 0.85,
             }}>
             {(board?.name ?? connectedDevice?.name ?? connectedDevice?.id) +
-              ' ⚙️'}
+              ` (${generationName}) ⚙️`}
           </Text>
         </Pressable>
       </View>

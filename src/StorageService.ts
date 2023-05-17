@@ -4,18 +4,30 @@ const PREFIX = 'owrn-app';
 const PREFIX_APP_CONFIG = PREFIX + '-appconfig';
 const PREFIX_SAVEDBOARDS = PREFIX + '-savedboard#';
 
-export const WHEEL_SIZES = {
-  'Stock XR+ (11.5)': 11.5,
-  'TFL/Burris/Hoosier (11)': 11,
-  'Stock Pint (10.5)': 10.5,
+export type SupportedGeneration = 4 | 5 | 6 | 7;
+
+export const STOCK_WHEEL_SIZES: {
+  [generation in SupportedGeneration]: number;
+} = {
+  4: 11.5, // XR
+  5: 10.5, // Pint
+  6: 11.5, // GT
+  7: 10.5, // PintX
 };
 
 export type SavedBoard = {
-  id: string;
-  name: string;
+  // Whether or not to attempt autoconnect.
   autoconnect: boolean;
-  wheelSize: number;
+  // What generation of board we're connected to.
+  generation: SupportedGeneration;
+  // id
+  id: string;
+  // User-defined name.
+  name: string;
+  // Effective top speed.
   topRPM?: number;
+  // In inches- Used to calculate speed from RPM.
+  wheelSize: number;
 };
 
 export type SpeedUnit = 'MPH' | 'KPH';
@@ -31,6 +43,7 @@ export type AppConfig = {
   speedUnit: SpeedUnit;
   // Theme setting-- light/dark/defer to system.
   theme: ThemeOption;
+  // Generate a debug board for deveopment without BT support.
   debug: boolean;
 };
 
@@ -46,9 +59,11 @@ export interface IStorageService {
 }
 
 const reviveBoard: (dry: string) => SavedBoard = dry => {
-  const {id, name, autoconnect, topRPM, wheelSize} = JSON.parse(dry);
+  const {id, name, autoconnect, topRPM, wheelSize, generation} =
+    JSON.parse(dry);
   return {
     id,
+    generation,
     name,
     autoconnect,
     topRPM,
