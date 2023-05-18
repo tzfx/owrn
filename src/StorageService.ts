@@ -1,10 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {SupportedGeneration} from './util/board';
 
 const PREFIX = 'owrn-app';
 const PREFIX_APP_CONFIG = PREFIX + '-appconfig';
 const PREFIX_SAVEDBOARDS = PREFIX + '-savedboard#';
-
-export type SupportedGeneration = 4 | 5 | 6 | 7;
 
 export const STOCK_WHEEL_SIZES: {
   [generation in SupportedGeneration]: number;

@@ -7,11 +7,10 @@ import CustomShaping from './CustomShaping';
 import {Typography} from './Typography';
 import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
 import {SavedBoard} from './StorageService';
-
-type SupportedBoards = 'GT' | 'Pint' | 'PintX' | 'XR';
+import {Generation2Name, SupportedGenerationName} from './util/board';
 
 const modes: {
-  [board in SupportedBoards]: {
+  [board in SupportedGenerationName]: {
     [modeName: string]: {symbol: string; value: number};
   };
 } = {
@@ -31,16 +30,17 @@ const modes: {
     custom: {symbol: '🧰', value: 0x09},
   },
   PintX: {
-    redwood_x: {symbol: '🌳', value: 0x05},
-    pacific_x: {symbol: '🌊', value: 0x06},
-    elevated_x: {symbol: '⛰️', value: 0x07},
-    skyline_x: {symbol: '🏙️', value: 0x08},
-    custom_x: {symbol: '🧰', value: 0x09},
+    redwood: {symbol: '🌳', value: 0x05},
+    pacific: {symbol: '🌊', value: 0x06},
+    elevated: {symbol: '⛰️', value: 0x07},
+    skyline: {symbol: '🏙️', value: 0x08},
+    custom: {symbol: '🧰', value: 0x09},
   },
   XR: {
     sequoia: {symbol: '🌳', value: 0x04},
     cruz: {symbol: '🚢', value: 0x05},
     mission: {symbol: '🛕', value: 0x06},
+    elevated: {symbol: '⛰️', value: 0x07},
     delirium: {symbol: '😵‍💫', value: 0x08},
     custom: {symbol: '🧰', value: 0x09},
   },
@@ -56,7 +56,8 @@ const ModeSelection = ({device, board, debug}: Props) => {
   const [mode, setMode] = useState<Number | null>(null);
   const [isShapingOpen, setIsShapingOpen] = useState(false);
 
-  const boardType = board?.generation === 5 ? 'Pint' : 'XR';
+  const boardType: SupportedGenerationName =
+    Generation2Name[board?.generation ?? 5];
   console.debug('gen ->', board?.generation);
 
   /**
@@ -117,7 +118,7 @@ const ModeSelection = ({device, board, debug}: Props) => {
 
   function wrapIfSelected(title: string, modeOption: number) {
     if (mode === modeOption) {
-      return `>>> ${title} <<<`;
+      return `[ ${title} ]`;
     }
     return title;
   }
@@ -138,13 +139,17 @@ const ModeSelection = ({device, board, debug}: Props) => {
           )
           .map(([modeName, {symbol, value}]) => (
             <Pressable
+              style={{flexBasis: '40%'}}
               key={modeName}
               disabled={mode === value}
               onPress={() => select(modeName).catch(err => console.error(err))}>
               <Text
                 style={{
                   fontSize: Typography.fontsize.medium,
-                  color: mode === value ? 'grey' : Typography.colors.emerald,
+                  color:
+                    mode === value
+                      ? Typography.colors.davys_grey
+                      : Typography.colors.emerald,
                   paddingVertical: 10,
                   paddingHorizontal: 20,
                   textAlign: 'center',

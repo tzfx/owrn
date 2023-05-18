@@ -1,5 +1,3 @@
-import {SupportedGeneration} from '../StorageService';
-
 export const BoardGeneration = {
   V1: 1,
   V1_2: 2,
@@ -10,12 +8,18 @@ export const BoardGeneration = {
   PintX: 7,
 };
 
-export const GenerationName = {
+export const Generation2Name: {
+  [generation in SupportedGeneration]: SupportedGenerationName;
+} = {
   4: 'XR',
   5: 'Pint',
   6: 'GT',
   7: 'PintX',
 };
+
+export type SupportedGeneration = 4 | 5 | 6 | 7;
+
+export type SupportedGenerationName = 'GT' | 'Pint' | 'PintX' | 'XR';
 
 export type BoardGenerationName =
   | 'V1'

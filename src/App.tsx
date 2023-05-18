@@ -225,7 +225,7 @@ const App = () => {
       const debugBoard = {
         id: '1234-5678',
         name: 'debug-board',
-        generation: 5, // pint
+        generation: Math.floor(4 * Math.random()) + 4, // 4,5,6,7
         topRPM: 500,
         autoconnect: true,
         wheelSize: 10.5,
@@ -239,13 +239,13 @@ const App = () => {
       <StatusBar
         barStyle={config?.theme === 'dark' ? 'light-content' : 'dark-content'}
       />
-      <View style={theme}>
+      <View style={{...theme, flexDirection: 'column'}}>
         <View
           style={{
             ...styles.header,
             ...theme,
           }}>
-          {config != null ? (
+          {config != null && (
             <View style={{flex: 1}}>
               <ConfigEditor
                 style={theme}
@@ -257,24 +257,9 @@ const App = () => {
                 config={config}
               />
             </View>
-          ) : (
-            <></>
           )}
-          <Text style={styles.logo}>
-            <Text
-              style={{
-                color: Typography.colors.emerald,
-                fontSize: Typography.fontsize.xl,
-              }}>
-              ow
-            </Text>
-            <Text style={{fontSize: Typography.fontsize.xl}}>.rn</Text>
-          </Text>
-          <Text style={{...Typography.emptyFlex}} />
-        </View>
-        <View>
           {connectionState === ConnectionState.CONNECTED || config?.debug ? (
-            <View style={{...styles.fullscreen}}>
+            <View style={{flex: 4}}>
               <BoardHeader
                 board={connectedBoard}
                 handleSave={async updated => {
@@ -282,77 +267,94 @@ const App = () => {
                 }}
                 connectedDevice={connectedDevice}
               />
-
-              <Battery config={config} device={connectedDevice} />
-              <Telemetry
-                config={config}
-                board={connectedBoard}
-                device={connectedDevice}
-              />
-              <ModeSelection
-                board={connectedBoard}
-                device={connectedDevice}
-                debug={config?.debug}
-              />
             </View>
           ) : (
-            <View style={styles.fullscreen}>
-              <ConnectionStatus
-                style={{fontSize: Typography.fontsize.xxl}}
-                status={connectionState}
-              />
-              <Button
-                color={Typography.colors.emerald}
-                title={
-                  connectionState === ConnectionState.DISCONNECTED
-                    ? 'Start Scanning'
-                    : connectionState === ConnectionState.SCANNING
-                    ? 'Scanning...'
-                    : connectionState === ConnectionState.CONNECTING
-                    ? 'Connecting...'
-                    : ''
-                }
-                disabled={[
-                  ConnectionState.SCANNING,
-                  ConnectionState.CONNECTING,
-                ].some(v => v === connectionState)}
-                onPress={() => {
-                  scan()
-                    .then(async scanned => {
-                      const found = config?.autoconnect.find(id =>
-                        scanned.find(dev => dev.id === id),
-                      );
-                      if (found != null) {
-                        setConnectionState(ConnectionState.CONNECTING);
-                        await connect(found, scanned);
-                      }
-                    })
-                    .catch(err => {
-                      console.error(err);
-                    });
-                }}
-              />
-              {devices.map(dev => (
-                <Button
-                  title={
-                    savedBoards.find(d => d.id === dev.id)?.name ??
-                    dev.name ??
-                    dev.id
-                  }
-                  key={dev.id}
-                  color={Typography.colors.emerald}
-                  disabled={connectionState !== ConnectionState.DISCONNECTED}
-                  onPress={() => {
-                    setConnectionState(ConnectionState.CONNECTING);
-                    connect(dev.id, devices).catch(err => {
-                      console.error(err);
-                    });
-                  }}
-                />
-              ))}
+            <View style={{flex: 2}}>
+              <Text>
+                <Text
+                  style={{
+                    color: Typography.colors.emerald,
+                    fontSize: Typography.fontsize.xl,
+                  }}>
+                  ow
+                </Text>
+                <Text style={{fontSize: Typography.fontsize.xl}}>.rn</Text>
+              </Text>
+              <View style={{flex: 1}} />
             </View>
           )}
         </View>
+        {connectionState === ConnectionState.CONNECTED || config?.debug ? (
+          <View>
+            <Battery config={config} device={connectedDevice} />
+            <Telemetry
+              config={config}
+              board={connectedBoard}
+              device={connectedDevice}
+            />
+            <ModeSelection
+              board={connectedBoard}
+              device={connectedDevice}
+              debug={config?.debug}
+            />
+          </View>
+        ) : (
+          <View style={styles.fullscreen}>
+            <ConnectionStatus
+              style={{fontSize: Typography.fontsize.xxl}}
+              status={connectionState}
+            />
+            <Button
+              color={Typography.colors.emerald}
+              title={
+                connectionState === ConnectionState.DISCONNECTED
+                  ? 'Start Scanning'
+                  : connectionState === ConnectionState.SCANNING
+                  ? 'Scanning...'
+                  : connectionState === ConnectionState.CONNECTING
+                  ? 'Connecting...'
+                  : ''
+              }
+              disabled={[
+                ConnectionState.SCANNING,
+                ConnectionState.CONNECTING,
+              ].some(v => v === connectionState)}
+              onPress={() => {
+                scan()
+                  .then(async scanned => {
+                    const found = config?.autoconnect.find(id =>
+                      scanned.find(dev => dev.id === id),
+                    );
+                    if (found != null) {
+                      setConnectionState(ConnectionState.CONNECTING);
+                      await connect(found, scanned);
+                    }
+                  })
+                  .catch(err => {
+                    console.error(err);
+                  });
+              }}
+            />
+            {devices.map(dev => (
+              <Button
+                title={
+                  savedBoards.find(d => d.id === dev.id)?.name ??
+                  dev.name ??
+                  dev.id
+                }
+                key={dev.id}
+                color={Typography.colors.emerald}
+                disabled={connectionState !== ConnectionState.DISCONNECTED}
+                onPress={() => {
+                  setConnectionState(ConnectionState.CONNECTING);
+                  connect(dev.id, devices).catch(err => {
+                    console.error(err);
+                  });
+                }}
+              />
+            ))}
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );

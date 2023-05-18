@@ -15,7 +15,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import {GenerationName} from './util/board';
+import {Generation2Name} from './util/board';
 
 type Props = {
   connectedDevice?: PeripheralInfo;
@@ -29,7 +29,7 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
   const [formBoardname, setFormBoardname] = useState(board?.name);
   const [formWheelsize, setFormWheelsize] = useState(board?.wheelSize ?? 10.5);
 
-  const generationName = GenerationName[board?.generation ?? 5];
+  const generationName = Generation2Name[board?.generation ?? 5];
 
   async function saveBoard(id: string, newAutoconnect: boolean = autoconnect) {
     const updated: SavedBoard = {
@@ -137,20 +137,28 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
       <View style={styles.nameContainer}>
         <Pressable
           style={{
+            flexDirection: 'row',
             backgroundColor: Typography.colors.emerald,
             width: '100%',
-            paddingVertical: 5,
+            alignItems: 'center',
+            paddingVertical: 10,
           }}
           onPress={() => setEditting(true)}>
           <Text
             style={{
+              flex: 3,
               textAlign: 'center',
               color: Typography.colors.white,
-              fontSize: Typography.fontsize.large * 0.85,
+              fontSize: Typography.fontsize.medium,
             }}>
-            {(board?.name ?? connectedDevice?.name ?? connectedDevice?.id) +
-              ` (${generationName}) ⚙️`}
+            {board?.name ?? connectedDevice?.name ?? connectedDevice?.id}
           </Text>
+          <Text style={{flex: 1, fontStyle: 'italic', fontWeight: 'bold'}}>
+            {generationName.length === 2
+              ? generationName
+              : generationName.toLocaleLowerCase()}
+          </Text>
+          <Text style={{flex: 1, fontSize: Typography.fontsize.medium}}>⚙</Text>
         </Pressable>
       </View>
     </View>
