@@ -91,7 +91,7 @@ const Telemetry = ({board, device, config}: Props) => {
     }
 
     refreshRPM()
-      .then(() => (rpmPoller.current = setInterval(() => refreshRPM(), 750)))
+      .then(() => (rpmPoller.current = setInterval(() => refreshRPM(), 500)))
       .catch(err => console.error(err));
     refreshOdometers()
       .then(
@@ -138,25 +138,18 @@ const Telemetry = ({board, device, config}: Props) => {
         endAngle={270}
         innerRadius={75}
         labels={({datum}) => (datum.x === 'top' ? topSpeed.toFixed(1) : '')}
-        labelPlacement={'perpendicular'}
         labelPosition={'startAngle'}
         labelRadius={() => 130}
         style={{
           data: {
-            fill: ({datum}) =>
-              datum.x === ''
-                ? 'lightgrey'
-                : datum.x === 'top'
-                ? '#b9d0df'
-                : '#457b9d',
+            fill: ({datum}) => (datum.x === 'top' ? 'lightgrey' : '#457b9d'),
           },
           parent: {
             marginTop: -160,
           },
         }}
         data={[
-          {x: '', y: (metric ? 40.0 : 25.0) - (topSpeed ?? 0)},
-          {x: 'top', y: topSpeed ?? 0 - speed},
+          {x: 'top', y: topSpeed ?? 30 - speed},
           {x: 'speed', y: speed || 0.1},
         ]}
       />
