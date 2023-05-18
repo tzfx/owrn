@@ -139,7 +139,7 @@ const ModeSelection = ({device, board, debug}: Props) => {
           )
           .map(([modeName, {symbol, value}]) => (
             <Pressable
-              style={{flexBasis: '40%'}}
+              style={{flexBasis: '50%'}}
               key={modeName}
               disabled={mode === value}
               onPress={() => select(modeName).catch(err => console.error(err))}>

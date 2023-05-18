@@ -187,7 +187,7 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
 };
 
 const styles = StyleSheet.create({
-  boxed: {marginHorizontal: 30},
+  boxed: {marginHorizontal: 25},
   h1: {
     fontSize: Typography.fontsize.medium,
     paddingBottom: 20,
