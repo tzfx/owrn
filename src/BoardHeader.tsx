@@ -27,7 +27,9 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
   const [autoconnect, setAutoconnect] = useState(board?.autoconnect ?? false);
   const [editting, setEditting] = useState(false);
   const [formBoardname, setFormBoardname] = useState(board?.name);
-  const [formWheelsize, setFormWheelsize] = useState(board?.wheelSize ?? 10.5);
+  const [formWheelsize, setFormWheelsize] = useState(
+    STOCK_WHEEL_SIZES[board?.generation ?? 5],
+  );
 
   const generationName = Generation2Name[board?.generation ?? 5];
 
