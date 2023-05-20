@@ -27,6 +27,9 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
   const [autoconnect, setAutoconnect] = useState(board?.autoconnect ?? false);
   const [editting, setEditting] = useState(false);
   const [formBoardname, setFormBoardname] = useState(board?.name);
+  const [formCanUseCustomeShaping, setFormCanUseCustomShaping] = useState(
+    board?.canUseCustomShaping ?? false,
+  );
   const [formWheelsize, setFormWheelsize] = useState(
     STOCK_WHEEL_SIZES[board?.generation ?? 5],
   );
@@ -36,6 +39,7 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
   async function saveBoard(id: string, newAutoconnect: boolean = autoconnect) {
     const updated: SavedBoard = {
       id,
+      canUseCustomShaping: formCanUseCustomeShaping,
       name: formBoardname ?? id,
       generation: board?.generation ?? 5,
       autoconnect: newAutoconnect,
@@ -55,6 +59,7 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
 
   return (
     <View>
+      {/* TODO: Pull this modal out to its own component.*/}
       <Modal animationType="slide" visible={editting}>
         <SafeAreaView style={styles.modalContainer}>
           <View>
@@ -63,7 +68,7 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
                 fontSize: Typography.fontsize.medium,
                 fontWeight: '600',
               }}>
-              Board Configuration
+              {Generation2Name[board?.generation || 5]} Board Configuration
             </Text>
           </View>
           <View style={styles.modalInput}>
@@ -91,6 +96,15 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
                   saveBoard(connectedDevice!.id, value).then(() => {});
                 }}
                 value={autoconnect}
+              />
+            </View>
+            <View style={styles.switchContainer}>
+              <Text style={styles.switchLabel}>Show Custom Shaping</Text>
+              <Switch
+                onValueChange={value => {
+                  setFormCanUseCustomShaping(value);
+                }}
+                value={formCanUseCustomeShaping}
               />
             </View>
             <View
@@ -148,19 +162,35 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
           onPress={() => setEditting(true)}>
           <Text
             style={{
-              flex: 3,
+              flex: 4,
               textAlign: 'center',
               color: Typography.colors.white,
               fontSize: Typography.fontsize.medium,
             }}>
             {board?.name ?? connectedDevice?.name ?? connectedDevice?.id}
           </Text>
-          <Text style={{flex: 1, fontStyle: 'italic', fontWeight: 'bold'}}>
+          <Text
+            style={{
+              flex: 0.5,
+              fontStyle: 'italic',
+              textAlign: 'right',
+              fontWeight: 'bold',
+              color: Typography.colors.white,
+            }}>
             {generationName.length === 2
               ? generationName
               : generationName.toLocaleLowerCase()}
           </Text>
-          <Text style={{flex: 1, fontSize: Typography.fontsize.medium}}>⚙</Text>
+          <Text
+            style={{
+              flex: 0.5,
+              textAlign: 'right',
+              paddingRight: '5%',
+              color: Typography.colors.white,
+              fontSize: Typography.fontsize.medium * 1.25,
+            }}>
+            ⚙
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -205,11 +235,11 @@ const styles = StyleSheet.create({
   },
   switchContainer: {
     marginTop: 10,
-    marginHorizontal: 100,
-    width: 100,
+    marginLeft: 75,
+    width: 200,
     alignItems: 'center',
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
   },
   switchLabel: {
     paddingRight: 10,

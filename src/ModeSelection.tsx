@@ -6,7 +6,7 @@ import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import CustomShaping from './CustomShaping';
 import {Typography} from './Typography';
 import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
-import {SavedBoard} from './StorageService';
+import {AppConfig, SavedBoard} from './StorageService';
 import {Generation2Name, SupportedGenerationName} from './util/board';
 
 const modes: {
@@ -49,16 +49,15 @@ const modes: {
 interface Props {
   device?: PeripheralInfo;
   board?: SavedBoard;
-  debug?: boolean;
+  config?: AppConfig;
 }
 
-const ModeSelection = ({device, board, debug}: Props) => {
+const ModeSelection = ({device, board, config}: Props) => {
   const [mode, setMode] = useState<Number | null>(null);
   const [isShapingOpen, setIsShapingOpen] = useState(false);
 
   const boardType: SupportedGenerationName =
     Generation2Name[board?.generation ?? 5];
-  console.debug('gen ->', board?.generation);
 
   /**
    * Isses a bluetooth update to change the board to a given mode.
@@ -90,8 +89,8 @@ const ModeSelection = ({device, board, debug}: Props) => {
   }
 
   useEffect(() => {
-    if (debug) {
-      setMode(9);
+    if (config?.debug) {
+      setMode(0x06);
     }
 
     const getBoardInfo = async () => {
@@ -114,7 +113,7 @@ const ModeSelection = ({device, board, debug}: Props) => {
         setMode(readMode);
       })
       .catch(err => console.error(err));
-  }, [device, debug]);
+  }, [device, config]);
 
   function wrapIfSelected(title: string, modeOption: number) {
     if (mode === modeOption) {
@@ -134,9 +133,18 @@ const ModeSelection = ({device, board, debug}: Props) => {
           justifyContent: 'center',
         }}>
         {Object.entries(modes[boardType])
-          .filter(([modeName]) =>
-            isShapingOpen ? modeName === 'custom' : true,
-          )
+          .filter(([modeName]) => {
+            if (modeName === 'custom') {
+              if (isShapingOpen) {
+                return false;
+              }
+              if (!board?.canUseCustomShaping) {
+                return false;
+              }
+              return true;
+            }
+            return true;
+          })
           .map(([modeName, {symbol, value}]) => (
             <Pressable
               style={{flexBasis: '50%'}}

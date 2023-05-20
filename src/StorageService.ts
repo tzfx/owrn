@@ -17,6 +17,8 @@ export const STOCK_WHEEL_SIZES: {
 export type SavedBoard = {
   // Whether or not to attempt autoconnect.
   autoconnect: boolean;
+  // Whether or not to allow custom shaping.
+  canUseCustomShaping: boolean;
   // What generation of board we're connected to.
   generation: SupportedGeneration;
   // id
@@ -58,10 +60,18 @@ export interface IStorageService {
 }
 
 const reviveBoard: (dry: string) => SavedBoard = dry => {
-  const {id, name, autoconnect, topRPM, wheelSize, generation} =
-    JSON.parse(dry);
+  const {
+    id,
+    name,
+    canUseCustomShaping,
+    autoconnect,
+    topRPM,
+    wheelSize,
+    generation,
+  } = JSON.parse(dry);
   return {
     id,
+    canUseCustomShaping,
     generation,
     name,
     autoconnect,

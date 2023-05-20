@@ -22,13 +22,21 @@ import BoardHeader from './BoardHeader';
 import ConfigEditor from './ConfigEditor';
 import ConnectionStatus from './ConnectionStatus';
 import ModeSelection from './ModeSelection';
-import {AppConfig, SavedBoard, StorageService} from './StorageService';
+import {
+  AppConfig,
+  STOCK_WHEEL_SIZES,
+  SavedBoard,
+  StorageService,
+} from './StorageService';
 import Telemetry from './Telemetry';
 import {Themes, Typography} from './Typography';
 import {ConnectionState} from './util/ConnectionState';
 
 import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
-import {inferGenerationFromHardwareRevision} from './util/board';
+import {
+  SupportedGeneration,
+  inferGenerationFromHardwareRevision,
+} from './util/board';
 const BleManagerModule = NativeModules.BleManager;
 const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
@@ -122,9 +130,10 @@ const App = () => {
         found = {
           id: deviceId,
           generation,
+          canUseCustomShaping: false,
           name: deviceId,
           autoconnect: true,
-          wheelSize: 10.5, // @fixme: Determine wheel size based on board generation.
+          wheelSize: STOCK_WHEEL_SIZES[generation], // @fixme: Determine wheel size based on board generation.
         };
         await StorageService.saveBoard(found);
       }
@@ -222,13 +231,16 @@ const App = () => {
 
   useEffect(() => {
     if (config?.debug) {
+      const generation = (Math.floor(4 * Math.random()) +
+        4) as SupportedGeneration; // 4,5,6,7
       const debugBoard = {
         id: '1234-5678',
-        name: 'debug-board',
-        generation: Math.floor(4 * Math.random()) + 4, // 4,5,6,7
+        name: 'debug-board-12345',
+        generation,
         topRPM: 500,
         autoconnect: true,
-        wheelSize: 10.5,
+        canUseCustomShaping: true,
+        wheelSize: STOCK_WHEEL_SIZES[generation],
       } as SavedBoard;
       setConnectedBoard(debugBoard);
     }
@@ -295,7 +307,7 @@ const App = () => {
             <ModeSelection
               board={connectedBoard}
               device={connectedDevice}
-              debug={config?.debug}
+              config={config}
             />
           </View>
         ) : (
