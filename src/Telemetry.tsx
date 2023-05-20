@@ -11,7 +11,6 @@ import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
 interface Props {
   board?: SavedBoard;
   device?: PeripheralInfo;
-  debug?: boolean;
   config?: AppConfig;
 }
 
@@ -30,7 +29,9 @@ const Telemetry = ({board, device, config}: Props) => {
   function calculateSpeed(revs: number, diameter: number = 10.5, km = false) {
     return ((diameter * Math.PI * revs * 60) / (12 * 5_280)) * (km ? 1.609 : 1);
   }
-  const speed = calculateSpeed(rpm, board?.wheelSize, metric);
+  const speed = config?.debug
+    ? 13.0
+    : calculateSpeed(rpm, board?.wheelSize, metric);
   const topSpeed = calculateSpeed(topRPM, board?.wheelSize, metric);
 
   function rotations2Distance(
@@ -149,7 +150,7 @@ const Telemetry = ({board, device, config}: Props) => {
           },
         }}
         data={[
-          {x: 'top', y: topSpeed ?? 30 - speed},
+          {x: 'top', y: topSpeed - speed},
           {x: 'speed', y: speed || 0.1},
         ]}
       />
