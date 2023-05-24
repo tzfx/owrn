@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import {PeripheralInfo} from 'react-native-ble-manager';
 
-import {SavedBoard, StorageService} from './StorageService';
+import {STOCK_WHEEL_SIZES, SavedBoard, StorageService} from './StorageService';
 import {useEffect, useState} from 'react';
 import {Typography} from './Typography';
 import {
@@ -15,6 +15,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import {Generation2Name} from './util/board';
 
 type Props = {
   connectedDevice?: PeripheralInfo;
@@ -26,14 +27,23 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
   const [autoconnect, setAutoconnect] = useState(board?.autoconnect ?? false);
   const [editting, setEditting] = useState(false);
   const [formBoardname, setFormBoardname] = useState(board?.name);
-  const [formWheelsize, setFormWheelsize] = useState(board?.wheelSize ?? 10.5);
+  const [formCanUseCustomeShaping, setFormCanUseCustomShaping] = useState(
+    board?.canUseCustomShaping ?? false,
+  );
+  const [formWheelsize, setFormWheelsize] = useState(
+    STOCK_WHEEL_SIZES[board?.generation ?? 5],
+  );
+
+  const generationName = Generation2Name[board?.generation ?? 5];
 
   async function saveBoard(id: string, newAutoconnect: boolean = autoconnect) {
-    const updated = {
+    const updated: SavedBoard = {
       id,
+      canUseCustomShaping: formCanUseCustomeShaping,
       name: formBoardname ?? id,
+      generation: board?.generation ?? 5,
       autoconnect: newAutoconnect,
-      wheelSize: +(formWheelsize ?? 10.5),
+      wheelSize: +(formWheelsize ?? STOCK_WHEEL_SIZES[board?.generation ?? 5]),
     };
     await StorageService.saveBoard(updated);
     return handleSave(updated);
@@ -49,6 +59,7 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
 
   return (
     <View>
+      {/* TODO: Pull this modal out to its own component.*/}
       <Modal animationType="slide" visible={editting}>
         <SafeAreaView style={styles.modalContainer}>
           <View>
@@ -57,7 +68,7 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
                 fontSize: Typography.fontsize.medium,
                 fontWeight: '600',
               }}>
-              Board Configuration
+              {Generation2Name[board?.generation || 5]} Board Configuration
             </Text>
           </View>
           <View style={styles.modalInput}>
@@ -85,6 +96,15 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
                   saveBoard(connectedDevice!.id, value).then(() => {});
                 }}
                 value={autoconnect}
+              />
+            </View>
+            <View style={styles.switchContainer}>
+              <Text style={styles.switchLabel}>Show Custom Shaping</Text>
+              <Switch
+                onValueChange={value => {
+                  setFormCanUseCustomShaping(value);
+                }}
+                value={formCanUseCustomeShaping}
               />
             </View>
             <View
@@ -133,19 +153,44 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
       <View style={styles.nameContainer}>
         <Pressable
           style={{
+            flexDirection: 'row',
             backgroundColor: Typography.colors.emerald,
             width: '100%',
-            paddingVertical: 5,
+            alignItems: 'center',
+            paddingVertical: 10,
           }}
           onPress={() => setEditting(true)}>
           <Text
             style={{
+              flex: 4,
               textAlign: 'center',
               color: Typography.colors.white,
-              fontSize: Typography.fontsize.large * 0.85,
+              fontSize: Typography.fontsize.medium,
             }}>
-            {(board?.name ?? connectedDevice?.name ?? connectedDevice?.id) +
-              ' ⚙️'}
+            {board?.name ?? connectedDevice?.name ?? connectedDevice?.id}
+          </Text>
+          <Text
+            style={{
+              flex: 0.75,
+              fontStyle: 'italic',
+              textAlign: 'right',
+              fontWeight: 'bold',
+              fontSize: Typography.fontsize.small,
+              color: Typography.colors.white,
+            }}>
+            {generationName.length === 2
+              ? generationName
+              : generationName.toLocaleLowerCase()}
+          </Text>
+          <Text
+            style={{
+              flex: 0.5,
+              textAlign: 'right',
+              paddingRight: '5%',
+              color: Typography.colors.white,
+              fontSize: Typography.fontsize.medium * 1.25,
+            }}>
+            ⚙
           </Text>
         </Pressable>
       </View>
@@ -191,11 +236,11 @@ const styles = StyleSheet.create({
   },
   switchContainer: {
     marginTop: 10,
-    marginHorizontal: 100,
-    width: 100,
+    marginLeft: 75,
+    width: 200,
     alignItems: 'center',
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
   },
   switchLabel: {
     paddingRight: 10,

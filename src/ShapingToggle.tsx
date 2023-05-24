@@ -12,22 +12,22 @@ type Props = {
 const ShapingToggle = ({option, value, handleModifier}: Props) => {
   return (
     <View
-      // eslint-disable-next-line react-native/no-inline-styles
       style={{
         ...style.flexcol,
+        marginTop: 5,
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         borderColor: option.colors.label,
         borderWidth: StyleSheet.hairlineWidth,
         backgroundColor: option.colors.label,
       }}>
-      <Text style={{marginVertical: 10}}>
+      <Text style={{marginVertical: 15}}>
         {option.emoji ?? option.name} : {value}
       </Text>
       <Pressable
         style={({pressed}) => ({
           width: '100%',
-          paddingVertical: 5,
+          paddingVertical: 10,
           backgroundColor:
             pressed || value === option.limits.max
               ? option.colors.label
@@ -47,7 +47,7 @@ const ShapingToggle = ({option, value, handleModifier}: Props) => {
       <Pressable
         style={({pressed}) => ({
           width: '100%',
-          paddingVertical: 5,
+          paddingVertical: 10,
           backgroundColor:
             pressed || value === option.limits.min
               ? option.colors.label

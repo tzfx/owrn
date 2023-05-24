@@ -8,6 +8,19 @@ export const BoardGeneration = {
   PintX: 7,
 };
 
+export const Generation2Name: {
+  [generation in SupportedGeneration]: SupportedGenerationName;
+} = {
+  4: 'XR',
+  5: 'Pint',
+  6: 'GT',
+  7: 'PintX',
+};
+
+export type SupportedGeneration = 4 | 5 | 6 | 7;
+
+export type SupportedGenerationName = 'GT' | 'Pint' | 'PintX' | 'XR';
+
 export type BoardGenerationName =
   | 'V1'
   | 'V1_2'
@@ -44,7 +57,11 @@ export const getRevisionInformation = (revision: number) => {
 };
 
 export const inferBoardFromHardwareRevision = (revision: number) => {
-  const generation = Math.floor(revision / 1000);
+  const generation = inferGenerationFromHardwareRevision(revision);
 
   return Object.keys(BoardGeneration)[generation - 1] as BoardGenerationName;
+};
+
+export const inferGenerationFromHardwareRevision = (revision: number) => {
+  return Math.floor(revision / 1000) as SupportedGeneration;
 };

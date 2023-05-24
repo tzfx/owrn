@@ -15,18 +15,28 @@ import {
 } from 'react-native';
 
 import BleManager, {PeripheralInfo} from 'react-native-ble-manager';
+import {Buffer} from '@craftzdog/react-native-buffer';
 
 import Battery from './Battery';
 import BoardHeader from './BoardHeader';
 import ConfigEditor from './ConfigEditor';
 import ConnectionStatus from './ConnectionStatus';
 import ModeSelection from './ModeSelection';
-import {AppConfig, SavedBoard, StorageService} from './StorageService';
+import {
+  AppConfig,
+  STOCK_WHEEL_SIZES,
+  SavedBoard,
+  StorageService,
+} from './StorageService';
 import Telemetry from './Telemetry';
 import {Themes, Typography} from './Typography';
 import {ConnectionState} from './util/ConnectionState';
 
-import {ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
+import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
+import {
+  SupportedGeneration,
+  inferGenerationFromHardwareRevision,
+} from './util/board';
 const BleManagerModule = NativeModules.BleManager;
 const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
@@ -109,11 +119,21 @@ const App = () => {
         b => b.id === deviceId,
       );
       if (!found) {
+        const rhwr = await BleManager.read(
+          deviceId,
+          ONEWHEEL_SERVICE_UUID,
+          CHARACTERISTICS.hardwareRevision,
+        );
+        const bhwr = Buffer.from(rhwr);
+        const hwRevision = bhwr.readUInt16BE(0);
+        const generation = inferGenerationFromHardwareRevision(hwRevision);
         found = {
           id: deviceId,
+          generation,
+          canUseCustomShaping: generation === 4, // Only XR gets custom shaping by default.
           name: deviceId,
           autoconnect: true,
-          wheelSize: 10.5, // @fixme: Determine wheel size based on board generation.
+          wheelSize: STOCK_WHEEL_SIZES[generation],
         };
         await StorageService.saveBoard(found);
       }
@@ -211,13 +231,17 @@ const App = () => {
 
   useEffect(() => {
     if (config?.debug) {
+      const generation = (Math.floor(4 * Math.random()) +
+        4) as SupportedGeneration; // 4,5,6,7
       const debugBoard = {
         id: '1234-5678',
-        name: 'debug-board',
+        name: 'debug-board-12345',
+        generation,
         topRPM: 500,
         autoconnect: true,
-        wheelSize: 10.5,
-      };
+        canUseCustomShaping: true,
+        wheelSize: STOCK_WHEEL_SIZES[generation],
+      } as SavedBoard;
       setConnectedBoard(debugBoard);
     }
   }, [config]);
@@ -227,13 +251,13 @@ const App = () => {
       <StatusBar
         barStyle={config?.theme === 'dark' ? 'light-content' : 'dark-content'}
       />
-      <View style={theme}>
+      <View style={{...theme, flexDirection: 'column'}}>
         <View
           style={{
             ...styles.header,
             ...theme,
           }}>
-          {config != null ? (
+          {config != null && (
             <View style={{flex: 1}}>
               <ConfigEditor
                 style={theme}
@@ -245,24 +269,9 @@ const App = () => {
                 config={config}
               />
             </View>
-          ) : (
-            <></>
           )}
-          <Text style={styles.logo}>
-            <Text
-              style={{
-                color: Typography.colors.emerald,
-                fontSize: Typography.fontsize.xl,
-              }}>
-              ow
-            </Text>
-            <Text style={{fontSize: Typography.fontsize.xl}}>.rn</Text>
-          </Text>
-          <Text style={{...Typography.emptyFlex}} />
-        </View>
-        <View>
           {connectionState === ConnectionState.CONNECTED || config?.debug ? (
-            <View style={{...styles.fullscreen}}>
+            <View style={{flex: 4}}>
               <BoardHeader
                 board={connectedBoard}
                 handleSave={async updated => {
@@ -270,73 +279,94 @@ const App = () => {
                 }}
                 connectedDevice={connectedDevice}
               />
-
-              <Battery config={config} device={connectedDevice} />
-              <Telemetry
-                config={config}
-                board={connectedBoard}
-                device={connectedDevice}
-              />
-              <ModeSelection device={connectedDevice} debug={config?.debug} />
             </View>
           ) : (
-            <View style={styles.fullscreen}>
-              <ConnectionStatus
-                style={{fontSize: Typography.fontsize.xxl}}
-                status={connectionState}
-              />
-              <Button
-                color={Typography.colors.emerald}
-                title={
-                  connectionState === ConnectionState.DISCONNECTED
-                    ? 'Start Scanning'
-                    : connectionState === ConnectionState.SCANNING
-                    ? 'Scanning...'
-                    : connectionState === ConnectionState.CONNECTING
-                    ? 'Connecting...'
-                    : ''
-                }
-                disabled={[
-                  ConnectionState.SCANNING,
-                  ConnectionState.CONNECTING,
-                ].some(v => v === connectionState)}
-                onPress={() => {
-                  scan()
-                    .then(async scanned => {
-                      const found = config?.autoconnect.find(id =>
-                        scanned.find(dev => dev.id === id),
-                      );
-                      if (found != null) {
-                        setConnectionState(ConnectionState.CONNECTING);
-                        await connect(found, scanned);
-                      }
-                    })
-                    .catch(err => {
-                      console.error(err);
-                    });
-                }}
-              />
-              {devices.map(dev => (
-                <Button
-                  title={
-                    savedBoards.find(d => d.id === dev.id)?.name ??
-                    dev.name ??
-                    dev.id
-                  }
-                  key={dev.id}
-                  color={Typography.colors.emerald}
-                  disabled={connectionState !== ConnectionState.DISCONNECTED}
-                  onPress={() => {
-                    setConnectionState(ConnectionState.CONNECTING);
-                    connect(dev.id, devices).catch(err => {
-                      console.error(err);
-                    });
-                  }}
-                />
-              ))}
+            <View style={{flex: 2}}>
+              <Text>
+                <Text
+                  style={{
+                    color: Typography.colors.emerald,
+                    fontSize: Typography.fontsize.xl,
+                  }}>
+                  ow
+                </Text>
+                <Text style={{fontSize: Typography.fontsize.xl}}>.rn</Text>
+              </Text>
+              <View style={{flex: 1}} />
             </View>
           )}
         </View>
+        {connectionState === ConnectionState.CONNECTED || config?.debug ? (
+          <View style={styles.fullscreen}>
+            <Battery config={config} device={connectedDevice} />
+            <Telemetry
+              config={config}
+              board={connectedBoard}
+              device={connectedDevice}
+            />
+            <ModeSelection
+              board={connectedBoard}
+              device={connectedDevice}
+              config={config}
+            />
+          </View>
+        ) : (
+          <View style={styles.fullscreen}>
+            <ConnectionStatus
+              style={{fontSize: Typography.fontsize.xxl}}
+              status={connectionState}
+            />
+            <Button
+              color={Typography.colors.emerald}
+              title={
+                connectionState === ConnectionState.DISCONNECTED
+                  ? 'Start Scanning'
+                  : connectionState === ConnectionState.SCANNING
+                  ? 'Scanning...'
+                  : connectionState === ConnectionState.CONNECTING
+                  ? 'Connecting...'
+                  : ''
+              }
+              disabled={[
+                ConnectionState.SCANNING,
+                ConnectionState.CONNECTING,
+              ].some(v => v === connectionState)}
+              onPress={() => {
+                scan()
+                  .then(async scanned => {
+                    const found = config?.autoconnect.find(id =>
+                      scanned.find(dev => dev.id === id),
+                    );
+                    if (found != null) {
+                      setConnectionState(ConnectionState.CONNECTING);
+                      await connect(found, scanned);
+                    }
+                  })
+                  .catch(err => {
+                    console.error(err);
+                  });
+              }}
+            />
+            {devices.map(dev => (
+              <Button
+                title={
+                  savedBoards.find(d => d.id === dev.id)?.name ??
+                  dev.name ??
+                  dev.id
+                }
+                key={dev.id}
+                color={Typography.colors.emerald}
+                disabled={connectionState !== ConnectionState.DISCONNECTED}
+                onPress={() => {
+                  setConnectionState(ConnectionState.CONNECTING);
+                  connect(dev.id, devices).catch(err => {
+                    console.error(err);
+                  });
+                }}
+              />
+            ))}
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
