@@ -37,6 +37,7 @@ import {
   SupportedGeneration,
   inferGenerationFromHardwareRevision,
 } from './util/board';
+import LightsToggle from './LightsToggle';
 const BleManagerModule = NativeModules.BleManager;
 const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
@@ -298,6 +299,7 @@ const App = () => {
         </View>
         {connectionState === ConnectionState.CONNECTED || config?.debug ? (
           <View style={styles.fullscreen}>
+            <LightsToggle device={connectedDevice} />
             <Battery config={config} device={connectedDevice} />
             <Telemetry
               config={config}
