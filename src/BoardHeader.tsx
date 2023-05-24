@@ -171,10 +171,11 @@ const BoardHeader = ({connectedDevice, board, handleSave}: Props) => {
           </Text>
           <Text
             style={{
-              flex: 0.5,
+              flex: 0.75,
               fontStyle: 'italic',
               textAlign: 'right',
               fontWeight: 'bold',
+              fontSize: Typography.fontsize.small,
               color: Typography.colors.white,
             }}>
             {generationName.length === 2

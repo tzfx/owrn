@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 
 import {Buffer} from '@craftzdog/react-native-buffer';
-import {Pressable, Text, View} from 'react-native';
+import {Pressable, StyleSheet, Text, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import CustomShaping from './CustomShaping';
 import {Typography} from './Typography';
@@ -90,7 +90,7 @@ const ModeSelection = ({device, board, config}: Props) => {
 
   useEffect(() => {
     if (config?.debug) {
-      setMode(0x06);
+      setMode(0x09);
     }
 
     const getBoardInfo = async () => {
@@ -129,25 +129,40 @@ const ModeSelection = ({device, board, config}: Props) => {
         style={{
           flexDirection: 'row',
           flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'center',
+          alignItems: 'stretch',
         }}>
         {Object.entries(modes[boardType])
           .filter(([modeName]) => {
             if (modeName === 'custom') {
-              if (isShapingOpen) {
-                return false;
-              }
               if (!board?.canUseCustomShaping) {
                 return false;
               }
               return true;
+            } else {
+              if (isShapingOpen) {
+                return false;
+              }
             }
             return true;
           })
           .map(([modeName, {symbol, value}]) => (
             <Pressable
-              style={{flexBasis: '50%'}}
+              style={{
+                flexBasis: '50%',
+                height: 50,
+                borderColor:
+                  mode !== value
+                    ? Typography.colors.emerald
+                    : Typography.colors.white,
+                backgroundColor:
+                  mode === value
+                    ? Typography.colors.emerald
+                    : Typography.colors.white,
+                borderWidth: StyleSheet.hairlineWidth,
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexGrow: 1,
+              }}
               key={modeName}
               disabled={mode === value}
               onPress={() => select(modeName).catch(err => console.error(err))}>
@@ -156,11 +171,8 @@ const ModeSelection = ({device, board, config}: Props) => {
                   fontSize: Typography.fontsize.medium,
                   color:
                     mode === value
-                      ? Typography.colors.davys_grey
+                      ? Typography.colors.white
                       : Typography.colors.emerald,
-                  paddingVertical: 10,
-                  paddingHorizontal: 20,
-                  textAlign: 'center',
                 }}>
                 {wrapIfSelected(
                   `${symbol} ${modeName[0].toUpperCase() + modeName.slice(1)}`,
@@ -174,14 +186,18 @@ const ModeSelection = ({device, board, config}: Props) => {
       {mode === 9 && (
         <Pressable
           style={{
-            marginTop: 10,
+            marginTop: 5,
+            height: 50,
+            alignItems: 'center',
+            justifyContent: 'center',
+            // marginTop: 10,
             backgroundColor: Typography.colors.emerald,
-            paddingVertical: 10,
+            // paddingVertical: 10,
           }}
           onPress={() => setIsShapingOpen(!isShapingOpen)}>
           <Text
             style={{
-              fontSize: Typography.fontsize.small,
+              fontSize: Typography.fontsize.medium,
               color: Typography.colors.white,
               textAlign: 'center',
             }}>

@@ -130,10 +130,10 @@ const App = () => {
         found = {
           id: deviceId,
           generation,
-          canUseCustomShaping: false,
+          canUseCustomShaping: generation === 4, // Only XR gets custom shaping by default.
           name: deviceId,
           autoconnect: true,
-          wheelSize: STOCK_WHEEL_SIZES[generation], // @fixme: Determine wheel size based on board generation.
+          wheelSize: STOCK_WHEEL_SIZES[generation],
         };
         await StorageService.saveBoard(found);
       }
@@ -297,7 +297,7 @@ const App = () => {
           )}
         </View>
         {connectionState === ConnectionState.CONNECTED || config?.debug ? (
-          <View>
+          <View style={styles.fullscreen}>
             <Battery config={config} device={connectedDevice} />
             <Telemetry
               config={config}
