@@ -4,21 +4,19 @@ import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
 import {Buffer} from '@craftzdog/react-native-buffer';
 import {Typography} from './Typography';
+import {rescale} from './util/utils';
 
 type Props = {
   device?: PeripheralInfo;
 };
 
-// @TODO: Brightness selection.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const MOON_PHASES = ['🌑', '🌒', '🌓', '🌔', '🌕'];
 
 const LightsToggle = ({device}: Props) => {
   const [lights, setLights] = useState(true);
 
-  // @TODO: Brightness selection.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [brightness, setBrightness] = useState(0);
+  const [brightness, setBrightness] = useState(5);
+  const [showBrightnessControl, setShowBrightnessControl] = useState(false);
 
   async function toggleLights() {
     if (device?.id != null) {
@@ -29,6 +27,33 @@ const LightsToggle = ({device}: Props) => {
         [lights ? 0 : 1],
       );
       setLights(!lights);
+      setShowBrightnessControl(false);
+    }
+  }
+
+  // @TODO: Brightness does not appear to work at all on pint? Investigate more, disabled for now.
+  async function adjustBrightness(direction: 1 | -1) {
+    if (device?.id != null) {
+      const out = Math.round(rescale(brightness + direction, 1, 5, 0, 255));
+      console.debug('writing brightness', out);
+      await BTManager.write(
+        device?.id,
+        ONEWHEEL_SERVICE_UUID,
+        CHARACTERISTICS.lights,
+        [out, 1],
+      );
+      const rlights = await BTManager.read(
+        device.id,
+        ONEWHEEL_SERVICE_UUID,
+        CHARACTERISTICS.lights,
+      );
+      const bLights = Buffer.from(rlights);
+      const [brightnessValue, _enabledValue] = [
+        bLights.readUInt8(0),
+        bLights.readUInt8(1),
+      ];
+      console.debug('bright', brightnessValue);
+      setBrightness(brightness + direction);
     }
   }
 
@@ -41,16 +66,18 @@ const LightsToggle = ({device}: Props) => {
           CHARACTERISTICS.lights,
         );
         const bLights = Buffer.from(rlights);
-        const [enabledValue, brightnessValue] = [
+        const [brightnessValue, enabledValue] = [
           bLights.readUInt8(0),
           bLights.readUInt8(1),
         ];
+        console.debug('enabled, bright', enabledValue, brightnessValue);
         setLights(!!enabledValue);
-        setBrightness(brightnessValue);
+        setBrightness(brightnessValue + 1);
       }
     }
     readLights();
-  }, [device]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Meant to be fired off only once on init.
 
   return (
     <View
@@ -58,23 +85,60 @@ const LightsToggle = ({device}: Props) => {
         flexDirection: 'row',
         justifyContent: 'flex-end',
         width: '100%',
+        alignItems: 'center',
         paddingRight: '10%',
-        position: 'absolute',
+        marginBottom: -30,
+        zIndex: 1,
       }}>
+      {showBrightnessControl && (
+        <View>
+          <Pressable
+            disabled={brightness === MOON_PHASES.length}
+            onPress={() => adjustBrightness(1)}
+            style={({pressed}) => ({
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: 30,
+              width: 30,
+              backgroundColor: pressed
+                ? Typography.colors.davys_grey
+                : Typography.colors.celadon,
+              borderRadius: 10,
+              opacity: brightness === MOON_PHASES.length ? 0.25 : 1,
+            })}>
+            <Text style={{fontSize: Typography.fontsize.medium}}>+</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => adjustBrightness(-1)}
+            disabled={brightness === 1}
+            style={({pressed}) => ({
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: 30,
+              width: 30,
+              backgroundColor: pressed
+                ? Typography.colors.davys_grey
+                : Typography.colors.celadon,
+              borderRadius: 10,
+              opacity: brightness === 1 ? 0.25 : 1,
+            })}>
+            <Text style={{fontSize: Typography.fontsize.medium}}>-</Text>
+          </Pressable>
+        </View>
+      )}
       <Pressable
-        style={({pressed}) => ({
+        style={{
           justifyContent: 'center',
           alignItems: 'center',
-          height: 50,
-          width: 50,
-          backgroundColor: pressed
-            ? Typography.colors.davys_grey
-            : Typography.colors.emerald,
+          height: Typography.fontsize.large * 1.5,
+          width: Typography.fontsize.large * 1.5,
+          backgroundColor: Typography.colors.emerald,
           borderRadius: 15,
-        })}
+          marginHorizontal: 5,
+        }}
         onPress={() => toggleLights()}>
         <Text style={{fontSize: Typography.fontsize.large}}>
-          {lights ? '🌝' : '🌚'}
+          {lights ? '🌕' : '🌑'}
         </Text>
       </Pressable>
     </View>
