@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
 
 import {Buffer} from '@craftzdog/react-native-buffer';
 import {StyleSheet, Text, View} from 'react-native';
@@ -26,13 +26,21 @@ const Telemetry = ({board, device, config}: Props) => {
   const odometerPoller = useRef<number>();
   const rpmPoller = useRef<number>();
 
-  function calculateSpeed(revs: number, diameter: number = 10.5, km = false) {
+  function calculateSpeed(
+    revs: number = 0,
+    diameter: number = 10.5,
+    km = false,
+  ) {
     return ((diameter * Math.PI * revs * 60) / (12 * 5_280)) * (km ? 1.609 : 1);
   }
   const speed = config?.debug
     ? 13.0
     : calculateSpeed(rpm, board?.wheelSize, metric);
-  const topSpeed = calculateSpeed(topRPM, board?.wheelSize, metric);
+  const topSpeed = calculateSpeed(
+    board?.topRPM ?? topRPM,
+    board?.wheelSize,
+    metric,
+  );
 
   function rotations2Distance(
     rotations: number,
@@ -113,20 +121,15 @@ const Telemetry = ({board, device, config}: Props) => {
     };
   }, [device]);
 
-  useEffect(() => {
-    if (board != null) {
-      setTopRPM(board.topRPM ?? 0);
-    }
-  }, [board]);
-
-  useEffect(() => {
+  useLayoutEffect(() => {
+    console.debug('b.trpm, rpm', board?.topRPM, rpm);
     if (board != null && rpm > (board.topRPM ?? 0)) {
       setTopRPM(rpm);
       StorageService.saveBoard({...board, topRPM: rpm});
     }
   }, [board, rpm]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setMetric(config?.speedUnit === 'KPH');
   }, [config]);
 
