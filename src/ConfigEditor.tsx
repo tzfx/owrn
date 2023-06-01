@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   Button,
   FlatList,
@@ -36,7 +36,9 @@ const ConfigEditor = ({config, handleConfigUpdate, style}: Props) => {
   const [theme, setTheme] = useState<ThemeOption>(config.theme);
   const [savedBoards, setSavedBoards] = useState<SavedBoard[]>([]);
 
-  StorageService.getSavedBoards().then(boards => setSavedBoards(boards));
+  useEffect(() => {
+    StorageService.getSavedBoards().then(boards => setSavedBoards(boards));
+  }, []);
 
   return (
     <View style={{...styles.boxed, ...style}}>

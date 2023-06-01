@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
 import {SavedBoard, StorageService} from '../src/StorageService';
 
 beforeEach(() => AsyncStorage.clear());
@@ -74,6 +73,8 @@ describe('StorageService - SavedBoard', () => {
         name: `board-${i + 1}`,
         wheelSize: 11,
         autoconnect: true,
+        canUseCustomShaping: false,
+        generation: 5,
       }));
     await [b1, b2, b3].reduce(async (p, c) => {
       await p;

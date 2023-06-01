@@ -1,14 +1,14 @@
+import {Buffer} from '@craftzdog/react-native-buffer';
 import React, {useEffect, useState} from 'react';
 import {Pressable, Text, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
+import {SavedBoard} from './StorageService';
+import {Typography} from './Typography';
 import {
   CHARACTERISTICS,
   ONEWHEEL_SERVICE_UUID,
   RIDE_TRAIT_VALUES,
 } from './util/bluetooth';
-import {Buffer} from '@craftzdog/react-native-buffer';
-import {Typography} from './Typography';
-import {SavedBoard} from './StorageService';
 
 type Props = {
   board?: SavedBoard;
@@ -33,13 +33,13 @@ const SimpleStopToggle = ({board, device}: Props) => {
   useEffect(() => {
     async function readSimpleStop() {
       if (device?.id != null) {
-        const rlights = await BTManager.read(
+        const rtrait = await BTManager.read(
           device.id,
           ONEWHEEL_SERVICE_UUID,
           CHARACTERISTICS.rideTrait,
         );
-        const bLights = Buffer.from(rlights);
-        const [trait, value] = [bLights.readUInt8(0), bLights.readUInt8(1)];
+        const btrait = Buffer.from(rtrait);
+        const [trait, value] = [btrait.readUInt8(0), btrait.readUInt8(1)];
         console.debug('trait, val', trait, value);
         setSimpleStop(!!value);
       }

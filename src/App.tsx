@@ -60,9 +60,7 @@ const App = () => {
 
   async function scan(deviceId?: string): Promise<PeripheralInfo[]> {
     try {
-      await BleManager.scan([ONEWHEEL_SERVICE_UUID], scanDuration, false).catch(
-        () => {},
-      );
+      await BleManager.scan([ONEWHEEL_SERVICE_UUID], scanDuration, false);
       setConnectionState(ConnectionState.SCANNING);
       console.debug('Scan started.');
       let found: PeripheralInfo[] = [];
