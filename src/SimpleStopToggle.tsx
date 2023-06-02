@@ -9,7 +9,7 @@ import {
   ONEWHEEL_SERVICE_UUID,
   RIDE_TRAIT_VALUES,
 } from './util/bluetooth';
-import { sleep } from './util/utils';
+import {sleep} from './util/utils';
 
 type Props = {
   board?: SavedBoard;
