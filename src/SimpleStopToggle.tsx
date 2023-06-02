@@ -9,6 +9,7 @@ import {
   ONEWHEEL_SERVICE_UUID,
   RIDE_TRAIT_VALUES,
 } from './util/bluetooth';
+import { sleep } from './util/utils';
 
 type Props = {
   board?: SavedBoard;
@@ -17,22 +18,27 @@ type Props = {
 
 const SimpleStopToggle = ({board, device}: Props) => {
   const [simpleStop, setSimpleStop] = useState(true);
+  const [updating, setUpdating] = useState(false);
 
   async function toggleSimpleStop() {
     if (device?.id != null) {
-      await BTManager.write(
-        device.id,
-        ONEWHEEL_SERVICE_UUID,
-        CHARACTERISTICS.rideTrait,
-        [RIDE_TRAIT_VALUES.simpleStop, !simpleStop ? 1 : 0],
-      );
-      setSimpleStop(!simpleStop);
+      try {
+        return await BTManager.write(
+          device.id,
+          ONEWHEEL_SERVICE_UUID,
+          CHARACTERISTICS.rideTrait,
+          [RIDE_TRAIT_VALUES.simpleStop, !simpleStop ? 1 : 0],
+        );
+      } catch (err) {
+        return Promise.reject('Unable to write simpleStop value.');
+      }
     }
   }
 
-  useEffect(() => {
-    async function readSimpleStop() {
-      if (device?.id != null) {
+  async function readSimpleStop() {
+    if (device?.id != null) {
+      try {
+        await sleep(70);
         const rtrait = await BTManager.read(
           device.id,
           ONEWHEEL_SERVICE_UUID,
@@ -40,10 +46,21 @@ const SimpleStopToggle = ({board, device}: Props) => {
         );
         const btrait = Buffer.from(rtrait);
         const [trait, value] = [btrait.readUInt8(0), btrait.readUInt8(1)];
-        console.debug('trait, val', trait, value);
-        setSimpleStop(!!value);
+        if (trait === RIDE_TRAIT_VALUES.simpleStop) {
+          setSimpleStop(!!value);
+          setUpdating(false);
+        } else {
+          // Try again until we find simpeStop.
+          // This is kinda' gross, tbh.
+          await readSimpleStop();
+        }
+      } catch (err) {
+        return Promise.reject('Unable to read simpleStop value');
       }
     }
+  }
+
+  useEffect(() => {
     readSimpleStop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Meant to be fired off only once on init.
@@ -61,8 +78,14 @@ const SimpleStopToggle = ({board, device}: Props) => {
           : Typography.colors.davys_grey,
         borderRadius: 15,
         marginHorizontal: 5,
+        opacity: updating ? 0.5 : 1,
       }}
-      onPress={() => toggleSimpleStop()}>
+      disabled={updating}
+      onPress={async () => {
+        setUpdating(true);
+        await toggleSimpleStop();
+        await readSimpleStop();
+      }}>
       <Text style={{fontSize: Typography.fontsize.large}}>
         {simpleStop ? '✋' : '🤘'}
       </Text>
