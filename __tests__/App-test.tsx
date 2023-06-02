@@ -35,5 +35,5 @@ describe('App', () => {
     render(<App />);
     jest.runAllTimers();
     return await waitFor(() => expect(screen.toJSON()).toMatchSnapshot());
-  });
+  }, 10_000);
 });

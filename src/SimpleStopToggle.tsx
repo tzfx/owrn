@@ -9,7 +9,6 @@ import {
   ONEWHEEL_SERVICE_UUID,
   RIDE_TRAIT_VALUES,
 } from './util/bluetooth';
-import {sleep} from './util/utils';
 
 type Props = {
   board?: SavedBoard;
@@ -23,12 +22,13 @@ const SimpleStopToggle = ({board, device}: Props) => {
   async function toggleSimpleStop() {
     if (device?.id != null) {
       try {
-        return await BTManager.write(
+        await BTManager.write(
           device.id,
           ONEWHEEL_SERVICE_UUID,
           CHARACTERISTICS.rideTrait,
           [RIDE_TRAIT_VALUES.simpleStop, !simpleStop ? 1 : 0],
         );
+        await readSimpleStop();
       } catch (err) {
         return Promise.reject('Unable to write simpleStop value.');
       }
@@ -38,21 +38,24 @@ const SimpleStopToggle = ({board, device}: Props) => {
   async function readSimpleStop() {
     if (device?.id != null) {
       try {
-        await sleep(70);
-        const rtrait = await BTManager.read(
-          device.id,
-          ONEWHEEL_SERVICE_UUID,
-          CHARACTERISTICS.rideTrait,
-        );
-        const btrait = Buffer.from(rtrait);
-        const [trait, value] = [btrait.readUInt8(0), btrait.readUInt8(1)];
-        if (trait === RIDE_TRAIT_VALUES.simpleStop) {
-          setSimpleStop(!!value);
-          setUpdating(false);
-        } else {
-          // Try again until we find simpeStop.
-          // This is kinda' gross, tbh.
-          await readSimpleStop();
+        let count = 0;
+        // this looping situation is pretty awful.
+        while (count < 5) {
+          const rtrait = await BTManager.read(
+            device.id,
+            ONEWHEEL_SERVICE_UUID,
+            CHARACTERISTICS.rideTrait,
+          );
+          const btrait = Buffer.from(rtrait);
+          const [trait, value] = [btrait.readUInt8(0), btrait.readUInt8(1)];
+          if (trait === RIDE_TRAIT_VALUES.simpleStop) {
+            count++;
+            if (count > 2) {
+              setSimpleStop(!!value);
+              setUpdating(false);
+              return;
+            }
+          }
         }
       } catch (err) {
         return Promise.reject('Unable to read simpleStop value');
@@ -84,7 +87,7 @@ const SimpleStopToggle = ({board, device}: Props) => {
       onPress={async () => {
         setUpdating(true);
         await toggleSimpleStop();
-        await readSimpleStop();
+        setUpdating(false);
       }}>
       <Text style={{fontSize: Typography.fontsize.large}}>
         {simpleStop ? '✋' : '🤘'}
