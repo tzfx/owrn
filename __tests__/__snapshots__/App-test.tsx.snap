@@ -1,0 +1,153 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`App renders without crashing 1`] = `
+<RCTSafeAreaView
+  style={
+    {
+      "backgroundColor": "#fff",
+      "color": "#000",
+    }
+  }
+>
+  <View
+    style={
+      {
+        "backgroundColor": "#fff",
+        "color": "#000",
+        "flexDirection": "column",
+      }
+    }
+  >
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "backgroundColor": "#fff",
+          "color": "#000",
+          "flexDirection": "row",
+          "fontSize": 48,
+          "justifyContent": "space-between",
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "flex": 2,
+          }
+        }
+      >
+        <Text>
+          <Text
+            style={
+              {
+                "color": "#56bf81",
+                "fontSize": 48,
+              }
+            }
+          >
+            ow
+          </Text>
+          <Text
+            style={
+              {
+                "fontSize": 48,
+              }
+            }
+          >
+            .rn
+          </Text>
+        </Text>
+        <View
+          style={
+            {
+              "flex": 1,
+            }
+          }
+        />
+      </View>
+    </View>
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "height": "100%",
+          "marginTop": "5%",
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "fontSize": 64,
+          }
+        }
+      >
+        📴
+      </Text>
+      <View
+        accessibilityRole="button"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": false,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onClick={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          {
+            "opacity": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {},
+            ]
+          }
+        >
+          <Text
+            disabled={false}
+            style={
+              [
+                {
+                  "color": "#007AFF",
+                  "fontSize": 18,
+                  "margin": 8,
+                  "textAlign": "center",
+                },
+                {
+                  "color": "#56bf81",
+                },
+              ]
+            }
+          >
+            Start Scanning
+          </Text>
+        </View>
+      </View>
+    </View>
+  </View>
+</RCTSafeAreaView>
+`;

@@ -84,7 +84,9 @@ const ModeSelection = ({device, board, config}: Props) => {
       );
       setMode(modeValue);
     } catch (err) {
-      console.error(err);
+      throw new Error(
+        `Unable to set ride mode: ${mode} -> ${selection}\n${err}`,
+      );
     }
   }
 
@@ -95,7 +97,7 @@ const ModeSelection = ({device, board, config}: Props) => {
 
     const getBoardInfo = async () => {
       if (device?.id == null) {
-        throw new Error('No connected device. (getBoardInfo)');
+        return Promise.reject('No connected device. (getBoardInfo)');
       }
       const rMode = await BTManager.read(
         device?.id,

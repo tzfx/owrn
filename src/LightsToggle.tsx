@@ -1,22 +1,27 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useState} from 'react';
 import {Pressable, Text, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
 import {Buffer} from '@craftzdog/react-native-buffer';
 import {Typography} from './Typography';
 import {rescale} from './util/utils';
+import {SavedBoard} from './StorageService';
+import {BoardGeneration} from './util/board';
 
 type Props = {
+  board?: SavedBoard;
   device?: PeripheralInfo;
 };
 
 const MOON_PHASES = ['🌑', '🌒', '🌓', '🌔', '🌕'];
 
-const LightsToggle = ({device}: Props) => {
+const LightsToggle = ({board, device}: Props) => {
   const [lights, setLights] = useState(true);
 
   const [brightness, setBrightness] = useState(5);
-  const [showBrightnessControl, setShowBrightnessControl] = useState(false);
+  const [showBrightnessControl, setShowBrightnessControl] = useState(
+    board?.generation === BoardGeneration.GT,
+  );
 
   async function toggleLights() {
     if (device?.id != null) {
@@ -57,6 +62,12 @@ const LightsToggle = ({device}: Props) => {
     }
   }
 
+  useLayoutEffect(() => {
+    if (board != null) {
+      setShowBrightnessControl(board.generation === BoardGeneration.GT);
+    }
+  }, [board]);
+
   useEffect(() => {
     async function readLights() {
       if (device?.id != null) {
@@ -83,13 +94,24 @@ const LightsToggle = ({device}: Props) => {
     <View
       style={{
         flexDirection: 'row',
-        justifyContent: 'flex-end',
-        width: '100%',
-        alignItems: 'center',
-        paddingRight: '10%',
-        marginBottom: -30,
-        zIndex: 1,
       }}>
+      <Pressable
+        style={{
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: Typography.fontsize.large * 1.5,
+          width: Typography.fontsize.large * 1.5,
+          backgroundColor: lights
+            ? Typography.colors.emerald
+            : Typography.colors.davys_grey,
+          borderRadius: 15,
+          marginHorizontal: 5,
+        }}
+        onPress={() => toggleLights()}>
+        <Text style={{fontSize: Typography.fontsize.large}}>
+          {lights ? '🌕' : '🌑'}
+        </Text>
+      </Pressable>
       {showBrightnessControl && (
         <View>
           <Pressable
@@ -98,8 +120,8 @@ const LightsToggle = ({device}: Props) => {
             style={({pressed}) => ({
               justifyContent: 'center',
               alignItems: 'center',
-              height: 30,
-              width: 30,
+              height: Typography.fontsize.large * 0.75,
+              width: Typography.fontsize.large * 0.75,
               backgroundColor: pressed
                 ? Typography.colors.davys_grey
                 : Typography.colors.celadon,
@@ -114,8 +136,8 @@ const LightsToggle = ({device}: Props) => {
             style={({pressed}) => ({
               justifyContent: 'center',
               alignItems: 'center',
-              height: 30,
-              width: 30,
+              height: Typography.fontsize.large * 0.75,
+              width: Typography.fontsize.large * 0.75,
               backgroundColor: pressed
                 ? Typography.colors.davys_grey
                 : Typography.colors.celadon,
@@ -126,21 +148,6 @@ const LightsToggle = ({device}: Props) => {
           </Pressable>
         </View>
       )}
-      <Pressable
-        style={{
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: Typography.fontsize.large * 1.5,
-          width: Typography.fontsize.large * 1.5,
-          backgroundColor: Typography.colors.emerald,
-          borderRadius: 15,
-          marginHorizontal: 5,
-        }}
-        onPress={() => toggleLights()}>
-        <Text style={{fontSize: Typography.fontsize.large}}>
-          {lights ? '🌕' : '🌑'}
-        </Text>
-      </Pressable>
     </View>
   );
 };
