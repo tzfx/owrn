@@ -81,68 +81,62 @@ const reviveBoard: (dry: string) => SavedBoard = dry => {
 };
 
 const StorageService: IStorageService = {
-  getAppConfig: () => {
-    return AsyncStorage.getItem(PREFIX_APP_CONFIG).then(config =>
-      config != null
-        ? JSON.parse(config)
-        : ({
-            autoconnect: [],
-            temperatureUnit: 'F',
-            speedUnit: 'MPH',
-            theme: 'system',
-            debug: false,
-          } as AppConfig),
+  getAppConfig: async () => {
+    const config = await AsyncStorage.getItem(PREFIX_APP_CONFIG);
+    return config != null
+      ? JSON.parse(config)
+      : ({
+          autoconnect: [],
+          temperatureUnit: 'F',
+          speedUnit: 'MPH',
+          theme: 'system',
+          debug: false,
+        } as AppConfig);
+  },
+  updateAppConfig: async (update: Partial<AppConfig>) => {
+    const config = await StorageService.getAppConfig();
+    if (
+      update.autoconnect?.length === 1 &&
+      !config.autoconnect.includes(update.autoconnect[0])
+    ) {
+      update.autoconnect = [update.autoconnect[0], ...config.autoconnect];
+    }
+    await AsyncStorage.setItem(
+      PREFIX_APP_CONFIG,
+      JSON.stringify({...config, ...update}),
     );
+    return config;
   },
-  updateAppConfig: (update: Partial<AppConfig>) => {
-    return StorageService.getAppConfig().then(config => {
-      if (
-        update.autoconnect?.length === 1 &&
-        !config.autoconnect.includes(update.autoconnect[0])
-      ) {
-        update.autoconnect = [update.autoconnect[0], ...config.autoconnect];
-      }
-      return AsyncStorage.setItem(
-        PREFIX_APP_CONFIG,
-        JSON.stringify({...config, ...update}),
-      ).then(() => config);
-    });
+  getSavedBoards: async () => {
+    const keys = await AsyncStorage.getAllKeys();
+    const keys_1 = keys.filter(k => k.startsWith(PREFIX_SAVEDBOARDS));
+    const boards = await AsyncStorage.multiGet(keys_1);
+    return boards.map(([_, v]) => reviveBoard(v as string));
   },
-  getSavedBoards: () => {
-    return AsyncStorage.getAllKeys()
-      .then(keys => keys.filter(k => k.startsWith(PREFIX_SAVEDBOARDS)))
-      .then(keys => AsyncStorage.multiGet(keys))
-      .then(boards => boards.map(([_, v]) => reviveBoard(v as string)));
+  getBoard: async function (id: string): Promise<SavedBoard> {
+    const v = await AsyncStorage.getItem(PREFIX_SAVEDBOARDS + id);
+    if (v == null) {
+      throw new Error(`Unable to retrieve board ${id}`);
+    }
+    return reviveBoard(v);
   },
-  getBoard: function (id: string): Promise<SavedBoard> {
-    return AsyncStorage.getItem(PREFIX_SAVEDBOARDS + id).then(v => {
-      if (v == null) {
-        throw new Error(`Unable to retrieve board ${id}`);
-      }
-      return reviveBoard(v);
-    });
-  },
-  saveBoard: function (board: SavedBoard): Promise<void> {
-    return StorageService.getAppConfig()
-      .then(({autoconnect}) => {
-        const found = autoconnect.includes(board.id);
-        let update: string[] = [];
-        // Add
-        if (board.autoconnect && !found) {
-          update = [board.id, ...autoconnect];
-        }
-        // Remove.
-        if (!board.autoconnect && found) {
-          update = autoconnect.filter(id => id !== board.id);
-        }
-        return StorageService.updateAppConfig({autoconnect: update});
-      })
-      .then(() =>
-        AsyncStorage.setItem(
-          PREFIX_SAVEDBOARDS + board.id,
-          JSON.stringify(board),
-        ),
-      );
+  saveBoard: async function (board: SavedBoard): Promise<void> {
+    const {autoconnect} = await StorageService.getAppConfig();
+    const found = autoconnect.includes(board.id);
+    let update: string[] = [];
+    // Add
+    if (board.autoconnect && !found) {
+      update = [board.id, ...autoconnect];
+    }
+    // Remove.
+    if (!board.autoconnect && found) {
+      update = autoconnect.filter(id => id !== board.id);
+    }
+    await StorageService.updateAppConfig({autoconnect: update});
+    return await AsyncStorage.setItem(
+      PREFIX_SAVEDBOARDS + board.id,
+      JSON.stringify(board),
+    );
   },
   removeBoard: async function (id: string): Promise<void> {
     await AsyncStorage.removeItem(PREFIX_SAVEDBOARDS + id);
