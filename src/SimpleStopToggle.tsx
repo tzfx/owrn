@@ -9,6 +9,7 @@ import {
   ONEWHEEL_SERVICE_UUID,
   RIDE_TRAIT_VALUES,
 } from './util/bluetooth';
+import {BoardGeneration} from './util/board';
 
 type Props = {
   board?: SavedBoard;
@@ -69,7 +70,7 @@ const SimpleStopToggle = ({board, device}: Props) => {
   }, []); // Meant to be fired off only once on init.
 
   // XR can't SimpleStop :(
-  return (board?.generation ?? 0) > 4 ? (
+  return (board?.generation ?? 0) > BoardGeneration.XR ? (
     <Pressable
       style={{
         justifyContent: 'center',

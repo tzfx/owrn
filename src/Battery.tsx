@@ -1,201 +1,184 @@
-import React, {Component} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 
 import {Buffer} from '@craftzdog/react-native-buffer';
 import {Text, View} from 'react-native';
 import BTManager, {PeripheralInfo} from 'react-native-ble-manager';
 import {VictoryBoxPlot, VictoryPie} from 'victory-native';
-import {AppConfig} from './StorageService';
+import {AppConfig, TemperatureUnit} from './StorageService';
 import {CHARACTERISTICS, ONEWHEEL_SERVICE_UUID} from './util/bluetooth';
 
 interface Props {
   device?: PeripheralInfo;
-  debug?: boolean;
   config?: AppConfig;
 }
 
-interface State {
-  cells?: any;
-  serial?: any;
-  percent?: number;
-  temperature?: any;
-  voltage?: number;
-}
+const Battery = ({config, device}: Props) => {
+  const [percent, setPercent] = useState<number>(50);
+  const [temperature, setTemperature] = useState<number>(20.55);
+  const [voltage, setVoltage] = useState<number>(52);
 
-class Battery extends Component<Props, State> {
-  #batteryPoller?: number;
-
-  constructor(props: Props) {
-    super(props);
-    this.state = {
-      percent: 0,
-      voltage: 52,
-      temperature: 20.55,
-    };
+  function convertTemperature(temp: number, unit: TemperatureUnit) {
+    switch (unit) {
+      case 'C':
+        return temp;
+      case 'F':
+        return temp * (9 / 5) + 32;
+      case 'K':
+        return temp + 273.15;
+    }
   }
 
-  private CtoF(temperature: number) {
-    return temperature * (9 / 5) + 32;
-  }
+  const temperatureDisplay = useMemo(
+    () =>
+      [
+        convertTemperature(temperature, config?.temperatureUnit ?? 'C').toFixed(
+          1,
+        ),
+        config?.temperatureUnit !== 'K' ? '°' : '',
+        config?.temperatureUnit ?? 'C',
+        temperature < 3 ? ' 🥶' : '',
+      ].join(''),
+    [config?.temperatureUnit, temperature],
+  );
 
-  private colorScale(value: number, max: number = 100): string {
+  function colorScale(value: number, max: number = 100): string {
     // https://coolors.co/e96060-e2852d-f3e189-abc274-359621
-    const percent = value / max;
-    if (percent > 0.75) {
+    const percentage = value / max;
+    if (percentage > 0.75) {
       return '#359621';
     }
-    if (percent > 0.45) {
+    if (percentage > 0.45) {
       return '#abc274';
     }
-    if (percent > 0.3) {
+    if (percentage > 0.3) {
       return '#f3E189';
     }
-    if (percent > 0.2) {
+    if (percentage > 0.2) {
       return '#e2852d';
     }
     return '#e96060';
   }
 
-  private refreshBatteryStats() {
-    if (this.props.device != null) {
-      return Promise.all([
-        BTManager.read(
-          this.props.device.id,
-          ONEWHEEL_SERVICE_UUID,
-          CHARACTERISTICS.batteryCells,
-        ),
-        BTManager.read(
-          this.props.device.id,
-          ONEWHEEL_SERVICE_UUID,
-          CHARACTERISTICS.batteryPercent,
-        ),
-        BTManager.read(
-          this.props.device.id,
-          ONEWHEEL_SERVICE_UUID,
-          CHARACTERISTICS.batterySerialNumber,
-        ),
-        BTManager.read(
-          this.props.device.id,
-          ONEWHEEL_SERVICE_UUID,
-          CHARACTERISTICS.batteryTemperature,
-        ),
-        BTManager.read(
-          this.props.device.id,
-          ONEWHEEL_SERVICE_UUID,
-          CHARACTERISTICS.batteryVoltage,
-        ),
-      ])
-        .then(([rcells, rpercent, rserial, rtemp, rvoltage]) => {
-          const [_bcells, bpercent, bserial, btemp, bvoltage] = [
-            // _bcells unused until I figure out how to calculate the output.
-            Buffer.from(rcells),
-            Buffer.from(rpercent),
-            Buffer.from(rserial),
-            Buffer.from(rtemp),
-            Buffer.from(rvoltage),
-          ];
-          this.setState({
-            percent: bpercent.readUInt8(1),
-            serial: bserial.readUInt16BE(0),
-            temperature: btemp.readUInt8(0),
-            voltage: bvoltage.readInt16BE(0) / 10,
-          });
-        })
-        .catch(() => {
-          if (this.#batteryPoller != null) {
-            clearInterval(this.#batteryPoller);
-          }
-        });
-    }
-    return Promise.reject('No device connected.');
-  }
+  const chargeColor = useMemo(() => colorScale(percent), [percent]);
 
-  async componentDidMount(): Promise<void> {
-    await this.refreshBatteryStats()
+  const batteryPoller = useRef<number>();
+
+  useEffect(() => {
+    function refreshBatteryStats() {
+      if (device?.id != null) {
+        return Promise.all([
+          // // TODO: Figure out what the heck to do with cell data.
+          // BTManager.read(
+          //   device.id,
+          //   ONEWHEEL_SERVICE_UUID,
+          //   CHARACTERISTICS.batteryCells,
+          // ),
+          BTManager.read(
+            device.id,
+            ONEWHEEL_SERVICE_UUID,
+            CHARACTERISTICS.batteryPercent,
+          ),
+          // BTManager.read(
+          //   device.id,
+          //   ONEWHEEL_SERVICE_UUID,
+          //   CHARACTERISTICS.batterySerialNumber,
+          // ),
+          BTManager.read(
+            device.id,
+            ONEWHEEL_SERVICE_UUID,
+            CHARACTERISTICS.batteryTemperature,
+          ),
+          BTManager.read(
+            device.id,
+            ONEWHEEL_SERVICE_UUID,
+            CHARACTERISTICS.batteryVoltage,
+          ),
+        ])
+          .then(([rcells, rpercent, rserial]) => {
+            const [bpercent, btemp, bvoltage] = [
+              // _bcells unused until I figure out how to calculate the output.
+              Buffer.from(rcells),
+              Buffer.from(rpercent),
+              Buffer.from(rserial),
+              // Buffer.from(rtemp),
+              // Buffer.from(rvoltage),
+            ];
+            setPercent(bpercent.readUInt8(1));
+            setTemperature(btemp.readUInt8(0));
+            setVoltage(bvoltage.readInt16BE(0) / 10);
+          })
+          .catch(() => {
+            if (batteryPoller.current != null) {
+              clearInterval(batteryPoller.current);
+            }
+          });
+      }
+      return Promise.reject('No device connected. (battery)');
+    }
+
+    refreshBatteryStats()
       .then(
         () =>
-          (this.#batteryPoller = setInterval(
-            () => this.refreshBatteryStats(),
+          (batteryPoller.current = setInterval(
+            () => refreshBatteryStats(),
             30_000,
           )),
       )
       .catch(err => console.error(err));
-  }
 
-  componentWillUnmount(): void {
-    if (this.#batteryPoller != null) {
-      clearInterval(this.#batteryPoller);
-    }
-  }
+    return () => {
+      if (batteryPoller.current != null) {
+        clearInterval(batteryPoller.current);
+      }
+    };
+  }, [device]);
 
-  render(): JSX.Element {
-    // Render mode selection based on OW generation.
-    return (
-      <View style={{}}>
-        <Text style={styles.tempLabel}>
-          {(this.props.config?.temperatureUnit === 'F'
-            ? this.CtoF(this.state.temperature)
-            : this.props.config?.temperatureUnit === 'K'
-            ? this.state.temperature + 273.15
-            : this.state.temperature
-          ).toFixed(1)}
-          {this.props.config?.temperatureUnit !== 'K' ? '°' : ''}
-          {this.props.config?.temperatureUnit}
-          {this.state.temperature < 3 ? '🥶' : ''}
-        </Text>
-        <Text style={{...styles.chartPercentLabel}}>{this.state.percent}%</Text>
-        <VictoryPie
-          height={350}
-          startAngle={90}
-          endAngle={-90}
-          innerRadius={75}
-          labels={() => ''}
-          style={{
-            data: {
-              fill: ({datum}) =>
-                datum.x === '' ? 'lightgrey' : this.colorScale(datum.y),
-            },
-          }}
-          data={[
-            {x: '', y: 100 - (this.state.percent ?? 0)},
-            {x: 'charge', y: this.state.percent},
-          ]}
-        />
-        <VictoryBoxPlot
-          horizontal
-          height={50}
-          style={{
-            parent: {
-              marginTop: -175,
-            },
-            medianLabels: {
-              fontSize: 10,
-            },
-          }}
-          medianLabels={() => this.state.voltage?.toFixed(1) + 'V'}
-          data={[
-            {
-              x: '',
-              min: 43.5,
-              median: this.state.voltage,
-              max: 62.25,
-              q1: this.state.voltage! - 0.15,
-              q3: this.state.voltage! + 0.15,
-            },
-          ]}
-        />
-        {!this.props.debug ?? (
-          <View>
-            <Text>Battery Stats</Text>
-            <Text>Percent: {this.state.percent}%</Text>
-            <Text>Serial: {this.state.serial}</Text>
-            <Text>Temperature: {this.CtoF(this.state.temperature)}&deg;F</Text>
-            <Text>Voltage: {this.state.voltage}V</Text>
-          </View>
-        )}
-      </View>
-    );
-  }
-}
+  return (
+    <View>
+      <Text style={styles.tempLabel}>{temperatureDisplay}</Text>
+      <Text style={{...styles.chartPercentLabel}}>{percent}%</Text>
+      <VictoryPie
+        height={350}
+        startAngle={90}
+        endAngle={-90}
+        innerRadius={75}
+        labels={() => ''}
+        style={{
+          data: {
+            fill: ({datum}) => (datum.x === '' ? 'lightgrey' : chargeColor),
+          },
+        }}
+        data={[
+          {x: '', y: 100 - (percent ?? 0)},
+          {x: 'charge', y: percent},
+        ]}
+      />
+      <VictoryBoxPlot
+        horizontal
+        height={50}
+        style={{
+          parent: {
+            marginTop: -175,
+          },
+          medianLabels: {
+            fontSize: 10,
+          },
+        }}
+        medianLabels={() => voltage?.toFixed(1) + 'V'}
+        data={[
+          {
+            x: '',
+            min: 43.5,
+            median: voltage,
+            max: 62.25,
+            q1: voltage! - 0.15,
+            q3: voltage! + 0.15,
+          },
+        ]}
+      />
+    </View>
+  );
+};
 
 const styles = {
   chartPercentLabel: {

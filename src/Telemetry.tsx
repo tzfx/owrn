@@ -1,4 +1,10 @@
-import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import {Buffer} from '@craftzdog/react-native-buffer';
 import {StyleSheet, Text, View} from 'react-native';
@@ -33,14 +39,6 @@ const Telemetry = ({board, device, config}: Props) => {
   ) {
     return ((diameter * Math.PI * revs * 60) / (12 * 5_280)) * (km ? 1.609 : 1);
   }
-  const speed = config?.debug
-    ? 13.0
-    : calculateSpeed(rpm, board?.wheelSize, metric);
-  const topSpeed = calculateSpeed(
-    board?.topRPM ?? topRPM,
-    board?.wheelSize,
-    metric,
-  );
 
   function rotations2Distance(
     rotations: number,
@@ -49,6 +47,22 @@ const Telemetry = ({board, device, config}: Props) => {
   ) {
     return ((diameter * rotations) / (12 * 5_280)) * (km ? 1.609 : 1);
   }
+
+  const speed = useMemo(
+    () =>
+      config?.debug ? 13.0 : calculateSpeed(rpm, board?.wheelSize, metric),
+    [board?.wheelSize, config?.debug, metric, rpm],
+  );
+
+  const topSpeed = useMemo(
+    () => calculateSpeed(board?.topRPM ?? topRPM, board?.wheelSize, metric),
+    [board?.topRPM, board?.wheelSize, metric, topRPM],
+  );
+
+  const tripDistance = useMemo(
+    () => rotations2Distance(tripRotations, board?.wheelSize, metric),
+    [tripRotations, board?.wheelSize, metric],
+  );
 
   useEffect(() => {
     function refreshRPM() {
@@ -165,9 +179,8 @@ const Telemetry = ({board, device, config}: Props) => {
         {config?.speedUnit.toLowerCase()}
       </Text>
       <Text style={styles.odometerLabel}>
-        (
-        {rotations2Distance(tripRotations, board?.wheelSize, metric).toFixed(1)}
-        ) {(odometer * (metric ? 1.609 : 1)).toFixed(1)} {metric ? 'km' : 'mi'}
+        ({tripDistance.toFixed(1)}){' '}
+        {(odometer * (metric ? 1.609 : 1)).toFixed(1)} {metric ? 'km' : 'mi'}
       </Text>
     </View>
   );

@@ -47,6 +47,12 @@
     "preset": "react-native",
     "transformIgnorePatterns": [
       "node_modules/(?!react-native|victory-.*|@react-native/polyfills)"
+    ],
+    "watchPathIgnorePatterns": [
+      "<rootDir>/android",
+      "<rootDir>/ios",
+      "<rootDir>/node_modules",
+      "<rootDir>/vendor"
     ]
   }
 }
